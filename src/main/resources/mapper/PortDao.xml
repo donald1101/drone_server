@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hkxx.drone.db.dao.PortDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.hkxx.drone.db.entity.PortEntity" id="portMap">
+        <result property="id" column="id"/>
+        <result property="value" column="value"/>
+        <result property="category" column="category"/>
+        <result property="deviceId" column="deviceId"/>
+        <result property="replayId" column="replayId"/>
+        <result property="available" column="available"/>
+    </resultMap>
+
+    <select id="selectByDeviceId" resultMap="portMap">
+        select * from port
+        <where>
+            <if test='deviceId!=null'>and deviceId=#{deviceId}</if>
+            <if test='available!=null'>and available=#{available}</if>
+            <if test='category!=null'>and category=#{category}</if>
+        </where>
+        limit #{offset}, #{limit}
+    </select>
+
+</mapper>

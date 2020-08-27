@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hkxx.drone.db.dao.DroneDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.hkxx.drone.db.entity.DroneEntity" id="droneMap">
+        <result property="id" column="id"/>
+        <result property="deviceId" column="device_id"/>
+        <result property="name" column="name"/>
+        <result property="model" column="model"/>
+        <result property="brand" column="brand"/>
+        <result property="serial" column="serial"/>
+        <result property="purchasetime" column="purchaseTime"/>
+        <result property="manager" column="manager"/>
+        <result property="serstate" column="serState"/>
+        <result property="maxheight" column="maxHeight"/>
+        <result property="maxlength" column="maxLength"/>
+        <result property="turnradius" column="turnRadius"/>
+        <result property="taskid" column="taskId"/>
+        <result property="flightid" column="flightId"/>
+        <result property="targetid" column="targetId"/>
+        <result property="permission" column="permission"/>
+        <result property="photourl" column="photoUrl"/>
+        <result property="wsaddress" column="wsAddress"/>
+        <result property="liveaddress" column="liveAddress"/>
+        <result property="linkaddress" column="linkAddress"/>
+        <result property="wsprefix" column="wsPrefix"/>
+        <result property="maxel" column="maxEl"/>
+        <result property="minflyheight" column="minFlyHeight"/>
+        <result property="minflyspeed" column="minFlySpeed"/>
+        <result property="takeoffheight" column="takeOffHeight"/>
+        <result property="returnheight" column="returnHeight"/>
+        <result property="returnhoverheight" column="returnHoverHeight"/>
+        <result property="maxcruisespeed" column="maxCruiseSpeed"/>
+        <result property="maxmicrocontrolspeed" column="maxMicroControlSpeed"/>
+        <result property="maxrisespeed" column="maxRiseSpeed"/>
+        <result property="maxdownspeed" column="maxDownSpeed"/>
+        <result property="lossofcontactreturnstatus" column="lossOfContactReturnStatus"/>
+        <result property="uavsignsetting" column="uavSignSetting"/>
+        <result property="controlType" column="control_type"/>
+        <result property="dronetype" column="droneType"/>
+    </resultMap>
+
+    <select id="selectByControlType" resultMap="droneMap">
+        select * from drone where control_type=#{controlType};
+    </select>
+
+    <select id="selectByDeviceId" resultMap="droneMap">
+        select * from drone where device_id=#{deviceId};
+    </select>
+
+    <select id="selectBySysId" resultMap="droneMap">
+        select * from drone where targetid=#{sysId};
+    </select>
+</mapper>

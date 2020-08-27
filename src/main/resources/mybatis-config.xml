@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <properties>
+        <!-- 警戒外网 -->
+        <property name="devdriver" value="com.mysql.cj.jdbc.Driver"/>
+        <property name="devurl"
+                  value="jdbc:mysql://127.0.0.1:3306/drone_cmd?serverTimezone=Asia/Shanghai&amp;useUnicode=true&amp;characterEncoding=UTF-8"/>
+        <property name="devuser" value="root"/>
+        <property name="devpass" value="wrj@709"/>
+
+    </properties>
+
+    <settings>
+        <setting name="logImpl" value="SLF4J"/>
+        <setting name="mapUnderscoreToCamelCase" value="true"/>
+    </settings>
+
+    <environments default="development">
+        <environment id="development">
+            <transactionManager type="JDBC"/>
+            <dataSource type="POOLED">
+                <property name="driver" value="${devdriver}"/>
+                <property name="url" value="${devurl}"/>
+                <property name="username" value="${devuser}"/>
+                <property name="password" value="${devpass}"/>
+            </dataSource>
+        </environment>
+    </environments>
+
+    <mappers>
+        <mapper resource="mapper/CurrentStatusDao.xml"/>
+        <mapper resource="mapper/DeviceDao.xml"/>
+        <mapper resource="mapper/DroneDao.xml"/>
+        <mapper resource="mapper/FlightpathDao.xml"/>
+        <mapper resource="mapper/PortDao.xml"/>
+        <mapper resource="mapper/SwarmDao.xml"/>
+        <mapper resource="mapper/SwarmDeviceDao.xml"/>
+        <mapper resource="mapper/TaskDao.xml"/>
+    </mappers>
+
+
+</configuration>

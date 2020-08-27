@@ -1,0 +1,21 @@
+[Unit]
+Description=Drone Server service
+After=network.target
+
+[Service]
+# Foreground process (do not use --daemon in ExecStart or config.rb)
+Type=simple
+
+# Preferably configure a non-privileged user
+User=root
+
+# The path to the application root
+WorkingDirectory=/home/gatc/drone-server/bin/
+
+# The command to start drone server
+ExecStart=/usr/bin/java -Dfile.encoding=utf-8  -jar Drone-Server-0.0.1.jar
+
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

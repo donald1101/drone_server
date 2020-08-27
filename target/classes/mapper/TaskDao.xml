@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hkxx.drone.db.dao.TaskDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.hkxx.drone.db.entity.TaskEntity" id="taskMap">
+        <result property="id" column="id"/>
+        <result property="planid" column="planId"/>
+        <result property="name" column="name"/>
+        <result property="status" column="status"/>
+        <result property="taskType" column="task_type"/>
+        <result property="rept" column="rept"/>
+        <result property="height" column="height"/>
+        <result property="createddatetime" column="createdDatetime"/>
+        <result property="nextrun" column="nextRun"/>
+        <result property="expectedoperationtime" column="expectedOperationTime"/>
+        <result property="updateDatetime" column="update_datetime"/>
+        <result property="distance" column="distance"/>
+    </resultMap>
+
+
+</mapper>
