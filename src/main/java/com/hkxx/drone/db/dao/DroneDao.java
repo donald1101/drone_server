@@ -21,4 +21,10 @@ public interface DroneDao extends BaseMapper<DroneEntity> {
     public DroneEntity selectByDeviceId(@Param("deviceId") int deviceId);
 
     public DroneEntity selectBySysId(@Param("sysId") int sysId);
+
+    /**
+     * @param controlTypes 传入多个controlType进行查找，格式为(1,2,3 ...)
+     * @return
+     */
+    public List<DroneEntity> selectByControlTypes(@Param("controlTypes") int[] controlTypes);
 }

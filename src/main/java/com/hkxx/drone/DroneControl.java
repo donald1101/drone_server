@@ -24,14 +24,16 @@ public class DroneControl {
     private int deviceId = 0; //该无人机在系统中的设备ID
 
     private Date lastSessionTime = DateTime.Now();
-    long sessionTimeout = 5000; //会话超时时间，若超过该时间，则认为设备掉线，需要进行重连，单位毫秒
+    private long sessionTimeout = 5000; //会话超时时间，若超过该时间，则认为设备掉线，需要进行重连，单位毫秒
     private TcpClient client = null;    //连接linkhub服务的客户端对象
-    int tsCheckState = 5000; //检测连接状态时间间隔
-    Thread tCheckConnection = null;
-    boolean isStopCheck = false;
-    Object synObject = new Object(); //信号量
-    int tsWait = 6000; //信号量等待时间，单位毫秒
+    private int tsCheckState = 5000; //检测连接状态时间间隔
+    private Thread tCheckConnection = null;
+    private boolean isStopCheck = false;
+    private Object synObject = new Object(); //信号量
+    private int tsWait = 6000; //信号量等待时间，单位毫秒
     private int deviceState = 0; //无人机当前运行状态，3为standby已准备完毕，4为active飞行中
+    private int deviceType = DeviceType.DRONE; //设备类型，默认为无人机
+    private int controlType = ControlType.CONTROL_CLUSTER; //控制类型
 
     private DeviceStateChanged deviceStateChangedListener = null;
 
@@ -115,6 +117,22 @@ public class DroneControl {
         this.deviceState = deviceState;
     }
 
+    public int getDeviceType() {
+        return deviceType;
+    }
+
+    public void setDeviceType(int deviceType) {
+        this.deviceType = deviceType;
+    }
+
+    public int getControlType() {
+        return controlType;
+    }
+
+    public void setControlType(int controlType) {
+        this.controlType = controlType;
+    }
+
     public DeviceStateChanged getDeviceStateChangedListener() {
         return deviceStateChangedListener;
     }
@@ -142,6 +160,14 @@ public class DroneControl {
                 rt = false;
                 return rt;
             }
+            if (deviceType != droneControl.getDeviceType()) {
+                rt = false;
+                return rt;
+            }
+            if (controlType != droneControl.getControlType()) {
+                rt = false;
+                return rt;
+            }
         } catch (Exception e) {
             e.printStackTrace();
             rt = false;
@@ -153,10 +179,24 @@ public class DroneControl {
         try {
             if (client == null) {
                 client = new TcpClient();
-                client.setServerIP(linkhubIP);
+                String serverIP = "";
+                int serverPort = 0;
+                switch (controlType) {
+                    case ControlType.CONTROL_CLUSTER:
+                        serverIP = linkhubIP;
+                        serverPort = linkhubPort;
+                        break;
+                    case ControlType.CONTROL_DIRECT:
+                        serverIP = devIP;
+                        serverPort = devPort;
+                        break;
+                    default:
+                        break;
+                }
+                client.setServerIP(serverIP);
                 client.setIdleTime(Config.idleTime);
                 client.setConnectTimeout(Config.connectTimeout);
-                client.setServerPort(linkhubPort);
+                client.setServerPort(serverPort);
                 MavlinkEncoder encoder = new MavlinkEncoder();
                 MavlinkDecoder decoder = new MavlinkDecoder();
                 client.setFilter(new ProtocolCodecFilter(new SimpleCodecFactory(
@@ -181,7 +221,7 @@ public class DroneControl {
                                     tsSpan = DateTime.Now().getTime() - lastSessionTime.getTime();
                                     if (tsSpan > tsTimeout) {
                                         //会话超时，需要重新连接
-                                        log.info("linkhub connection is timeout.Trying to reconnect...");
+                                        log.info("Device connection is timeout.Trying to reconnect...");
                                         client.close();
                                         client.connect();
                                     }

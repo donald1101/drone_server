@@ -38,7 +38,9 @@ public class Program {
                 Config.cmdTcpPort = Integer.parseInt(prop.getProperty("cmdTcpPort"));
                 Config.cmdUdpMode = Boolean.parseBoolean(prop.getProperty("cmdUdpMode"));
                 Config.cmdUdpPort = Integer.parseInt(prop.getProperty("cmdUdpPort"));
-
+                Config.tsSendHeartbeat = Integer.parseInt(prop.getProperty("tsSendHeartbeat"));
+                Config.isTcpServerSendHeartbeat = Boolean.parseBoolean(prop.getProperty("isTcpServerSendHeartbeat"));
+                Config.isUdpServerSendHeartbeat = Boolean.parseBoolean(prop.getProperty("isUdpServerSendHeartbeat"));
 
             } catch (Exception e) {
                 // TODO: handle exception
@@ -49,7 +51,10 @@ public class Program {
             DroneService droneService = new DroneService();
             droneService.setTsCheckTime(Config.checkDroneTime);
             droneService.start();
-
+            CommandService commandService = new CommandService();
+            commandService.setTsSendHeartbeat(Config.tsSendHeartbeat);
+            commandService.setTcpServerSendHeartbeat(Config.isTcpServerSendHeartbeat);
+            commandService.setUdpServerSendHeartbeat(Config.isUdpServerSendHeartbeat);
             if (Config.cmdTcpMode) {
                 //开启管理端tcp服务器
                 TcpServer tcpServer = new TcpServer();
@@ -63,6 +68,7 @@ public class Program {
                 handler.setDroneService(droneService);
                 tcpServer.setHandler(handler);
                 tcpServer.start();
+                commandService.setTcpServer(tcpServer);
             }
 
             if (Config.cmdUdpMode) {
@@ -78,8 +84,9 @@ public class Program {
                 handler.setDroneService(droneService);
                 udpServer.setHandler(handler);
                 udpServer.start();
+                commandService.setUdpServer(udpServer);
             }
-
+            commandService.start();
 
         } catch (Exception e) {
             // TODO: handle exception

@@ -86,4 +86,24 @@ public class LinkhubProfileManager {
         }
         return true;
     }
+
+    /*
+     * Check whether the profile file is exist.
+     */
+    public static boolean isProfileExist(String profileName) {
+        boolean rt = false;
+        try {
+            if (profileName == null) {
+                return false;
+            }
+            File file = new File(Config.linkhubProfilePath, profileName + SUFFIX_PROFILE);
+            if (file.exists() && file.isFile()) {
+                return true;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
 }

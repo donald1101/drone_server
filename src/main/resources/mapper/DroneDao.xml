@@ -53,4 +53,11 @@
     <select id="selectBySysId" resultMap="droneMap">
         select * from drone where targetid=#{sysId};
     </select>
+
+    <select id="selectByControlTypes" resultMap="droneMap">
+        select * from drone where control_type in
+        <foreach collection="controlTypes" item="item" index="index" open="(" close=")" separator=",">
+            #{item}
+        </foreach>
+    </select>
 </mapper>

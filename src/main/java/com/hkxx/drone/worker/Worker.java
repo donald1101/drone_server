@@ -19,6 +19,10 @@ public class Worker {
         return makeProfileName("drone", droneId);
     }
 
+    public static String makeBoatProfileName(int deviceId) {
+        return makeProfileName("boat", deviceId);
+    }
+
     public static String makeJoystickProfileName(int jsId) {
         return makeProfileName("js", jsId);
     }

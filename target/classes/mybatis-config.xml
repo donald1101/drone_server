@@ -16,6 +16,7 @@
     <settings>
         <setting name="logImpl" value="SLF4J"/>
         <setting name="mapUnderscoreToCamelCase" value="true"/>
+        <setting name="logImpl" value="STDOUT_LOGGING"/>
     </settings>
 
     <environments default="development">
@@ -31,6 +32,7 @@
     </environments>
 
     <mappers>
+        <mapper resource="mapper/BoatDao.xml"/>
         <mapper resource="mapper/CurrentStatusDao.xml"/>
         <mapper resource="mapper/DeviceDao.xml"/>
         <mapper resource="mapper/DroneDao.xml"/>

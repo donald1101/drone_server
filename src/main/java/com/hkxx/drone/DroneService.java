@@ -3,10 +3,7 @@ package com.hkxx.drone;
 import com.MAVLink.enums.MAV_COMPONENT;
 import com.alibaba.fastjson.JSON;
 import com.hkxx.drone.db.MybatisUtil;
-import com.hkxx.drone.db.dao.DroneDao;
-import com.hkxx.drone.db.dao.FlightpathDao;
-import com.hkxx.drone.db.dao.PortDao;
-import com.hkxx.drone.db.dao.SwarmDao;
+import com.hkxx.drone.db.dao.*;
 import com.hkxx.drone.db.entity.*;
 import com.hkxx.drone.worker.LinkhubProfileManager;
 import com.hkxx.drone.worker.Worker;
@@ -57,13 +54,25 @@ public class DroneService implements DroneControl.DeviceStateChanged {
                 public void run() {
                     log.info("DroneService is started.");
                     boolean isExist = false;
+                    //待删除的控制对象id列表
                     List<Integer> removeList = new ArrayList<>();
+                    //当前最新的控制对象id列表，droneMap中不在该列表中的对象，需要清理掉
+                    List<Integer> currentList = new ArrayList<>();
+                    //清空所有的linkhub配置文件
+                    try {
+                        LinkhubProfileManager.removeAll();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    int[] controlTypes = {ControlType.CONTROL_CLUSTER, ControlType.CONTROL_DIRECT};
                     while (!isStop) {
                         SqlSession sqlSession = null;
+                        currentList.clear();
                         try {
                             sqlSession = MybatisUtil.getSqlSession();
+                            //扫描无人机表，添加控制对象
                             DroneDao droneDao = sqlSession.getMapper(DroneDao.class);
-                            List<DroneEntity> droneList = droneDao.selectByControlType(ControlType.CONTROL_CLUSTER);
+                            List<DroneEntity> droneList = droneDao.selectByControlTypes(controlTypes);
                             DroneEntity drone = null;
                             DroneControl droneControl = null;
                             //加载新的无人机连接对象
@@ -78,48 +87,127 @@ public class DroneService implements DroneControl.DeviceStateChanged {
                                 droneControl.setDevPort(linkAddress.port);
                                 droneControl.setLinkhubIP(Config.linkhubIP);
                                 droneControl.setSessionTimeout(Config.sessionTimeout);
-                                //检测该无人机是否分配linkhub端口，若没有，则分配端口
-                                droneControl.setLinkhubPort(genLinkhubPort(drone.getDeviceId()));
+                                if (drone.getControlType() == ControlType.CONTROL_CLUSTER) {
+                                    //若是集群控制，则检测该无人机是否分配linkhub端口，若没有，则分配端口
+                                    droneControl.setLinkhubPort(genLinkhubPort(drone.getDeviceId()));
+                                }
                                 droneControl.setDeviceId(drone.getDeviceId()); //保存设备ID
                                 droneControl.setDeviceStateChangedListener(DroneService.this);
+                                droneControl.setDeviceType(DeviceType.DRONE);
+                                droneControl.setControlType(drone.getControlType());
+                                currentList.add(drone.getDeviceId()); //加入到当前控制对象id列表
                                 if (droneMap.containsKey(drone.getDeviceId())) {
-                                    //检测无人机的配置是否有变化，若偶变化则更新linkhub配置文件，通知linkhub更新服务
-                                    if (!droneMap.get(drone.getDeviceId()).isEqual(droneControl)) {
-                                        //更新linkhub配置文件
-                                        updateLinkhubProfile(drone.getDeviceId(), drone.getName(), droneControl.getDevIP(), droneControl.getDevPort(), droneControl.getLinkhubPort());
+                                    //检测无人机的配置是否有变化，若有变化则更新linkhub配置文件，通知linkhub更新服务
+                                    DroneControl controlInMap = droneMap.get(drone.getDeviceId());
+                                    if (!controlInMap.isEqual(droneControl)) {
+                                        //更新linkhub配置文件，先删除配置文件，若控制类型为集群控制，则生成新的配置文件
+                                        doDeleteDeviceProfile(drone.getDeviceId());
+                                        if (drone.getControlType() == ControlType.CONTROL_CLUSTER) {
+                                            //若控制类型为集群控制，则生成新的配置文件
+                                            updateLinkhubProfile(drone.getDeviceId(), drone.getName(), droneControl.getDevIP(), droneControl.getDevPort(), droneControl.getLinkhubPort(), DeviceType.DRONE);
+                                        }
                                         droneMap.put(drone.getDeviceId(), droneControl);
-                                        droneControl.stopConnection();//停止linkhub连接
-                                        droneControl.startConnection();//开启linkhub连接
+                                        droneControl.stopConnection();//停止连接
+                                        droneControl.startConnection();//开启连接
+                                    } else if (controlInMap.getControlType() == ControlType.CONTROL_CLUSTER) {
+                                        //若控制类型为集群控制，检测linkhub配置文件是否存在，若不存在，则创建，防止配置文件丢失
+                                        if (!LinkhubProfileManager.isProfileExist(Worker.makeDroneProfileName(controlInMap.getDeviceId()))) {
+                                            //若控制类型为集群控制，则生成新的配置文件
+                                            updateLinkhubProfile(drone.getDeviceId(), drone.getName(), droneControl.getDevIP(), droneControl.getDevPort(), droneControl.getLinkhubPort(), DeviceType.DRONE);
+                                        }
                                     }
                                 } else {
-                                    //若不存在，则添加无人机控制对象至droneMap，建立linkhub连接
-                                    //更新linkhub配置文件
-                                    updateLinkhubProfile(drone.getDeviceId(), drone.getName(), droneControl.getDevIP(), droneControl.getDevPort(), droneControl.getLinkhubPort());
+                                    //若不存在，则添加无人机控制对象至droneMap，建立连接
+                                    if (drone.getControlType() == ControlType.CONTROL_CLUSTER) {
+                                        //更新linkhub配置文件
+                                        updateLinkhubProfile(drone.getDeviceId(), drone.getName(), droneControl.getDevIP(), droneControl.getDevPort(), droneControl.getLinkhubPort(), DeviceType.DRONE);
+                                    }
                                     droneMap.put(drone.getDeviceId(), droneControl);
-                                    droneControl.startConnection();//开启linkhub连接
+                                    droneControl.startConnection();//开启连接
                                 }
                             }
-                            //比对当前无人机列表，清理已经删掉的无人机连接对象
+                            //扫描无人艇列表，添加无人艇控制对象
+                            sqlSession = MybatisUtil.getSqlSession();
+                            BoatDao boatDao = sqlSession.getMapper(BoatDao.class);
+                            List<BoatEntity> boatList = boatDao.selectByControlTypes(controlTypes);
+                            BoatEntity boat = null;
+                            DroneControl boatControl = null;
+                            //加载新的无人艇连接对象
+                            for (int i = 0; i < boatList.size(); i++) {
+                                boat = boatList.get(i);
+                                boatControl = new DroneControl();
+                                DeviceLinkAddress linkAddress = DeviceLinkAddress.parse(boat.getLinkaddress());
+                                if (linkAddress.host.equals(DeviceLinkAddress.HOST_LOCALHOST_IP) || linkAddress.port == DeviceLinkAddress.PORT_TOGEN) {
+                                    log.info("Device is using default localhost and port,please check if it is right.Drone's deviceId:" + boat.getDeviceId() + " Name:" + boat.getName());
+                                }
+                                boatControl.setDevIP(linkAddress.host);
+                                boatControl.setDevPort(linkAddress.port);
+                                boatControl.setLinkhubIP(Config.linkhubIP);
+                                boatControl.setSessionTimeout(Config.sessionTimeout);
+                                if (boat.getControlType() == ControlType.CONTROL_CLUSTER) {
+                                    //若是集群控制，则检测该无人机是否分配linkhub端口，若没有，则分配端口
+                                    boatControl.setLinkhubPort(genLinkhubPort(boat.getDeviceId()));
+                                }
+                                boatControl.setDeviceId(boat.getDeviceId()); //保存设备ID
+                                boatControl.setDeviceStateChangedListener(DroneService.this);
+                                boatControl.setDeviceType(DeviceType.BOAT);
+                                boatControl.setControlType(boat.getControlType());
+                                currentList.add(boat.getDeviceId()); //加入到当前控制对象id列表
+                                if (droneMap.containsKey(boat.getDeviceId())) {
+                                    //检测无人机的配置是否有变化，若有变化则更新linkhub配置文件，通知linkhub更新服务
+                                    DroneControl controlInMap = droneMap.get(boat.getDeviceId());
+                                    if (!controlInMap.isEqual(boatControl)) {
+                                        //更新linkhub配置文件，先删除配置文件，若控制类型为集群控制，则生成新的配置文件
+                                        doDeleteDeviceProfile(boat.getDeviceId());
+                                        if (boat.getControlType() == ControlType.CONTROL_CLUSTER) {
+                                            //若控制类型为集群控制，则生成新的配置文件
+                                            updateLinkhubProfile(boat.getDeviceId(), boat.getName(), boatControl.getDevIP(), boatControl.getDevPort(), boatControl.getLinkhubPort(), DeviceType.BOAT);
+                                        }
+                                        droneMap.put(boat.getDeviceId(), boatControl);
+                                        boatControl.stopConnection();//停止连接
+                                        boatControl.startConnection();//开启连接
+                                    } else if (controlInMap.getControlType() == ControlType.CONTROL_CLUSTER) {
+                                        //若控制类型为集群控制，检测linkhub配置文件是否存在，若不存在，则创建，防止配置文件丢失
+                                        if (!LinkhubProfileManager.isProfileExist(Worker.makeDroneProfileName(controlInMap.getDeviceId()))) {
+                                            //若控制类型为集群控制，则生成新的配置文件
+                                            updateLinkhubProfile(boat.getDeviceId(), boat.getName(), boatControl.getDevIP(), boatControl.getDevPort(), boatControl.getLinkhubPort(), DeviceType.BOAT);
+                                        }
+                                    }
+                                } else {
+                                    //若不存在，则添加无人机控制对象至droneMap，建立连接
+                                    if (boat.getControlType() == ControlType.CONTROL_CLUSTER) {
+                                        //更新linkhub配置文件
+                                        updateLinkhubProfile(boat.getDeviceId(), boat.getName(), boatControl.getDevIP(), boatControl.getDevPort(), boatControl.getLinkhubPort(), DeviceType.BOAT);
+                                    }
+                                    droneMap.put(boat.getDeviceId(), boatControl);
+                                    boatControl.startConnection();//开启连接
+                                }
+                            }
+                            //比对当前无人机控制列表，清理已经删掉的无人机连接对象
                             removeList.clear();
-                            for (Integer droneId : droneMap.keySet()) {
+                            for (Integer deviceId : droneMap.keySet()) {
                                 isExist = false;
-                                for (int i = 0; i < droneList.size(); i++) {
-                                    if (droneId == droneList.get(i).getDeviceId()) {
+                                for (int i = 0; i < currentList.size(); i++) {
+                                    if (deviceId == currentList.get(i)) {
                                         isExist = true;
                                         break;
                                     }
                                 }
                                 if (!isExist) {
                                     //需要清理掉当前的无人机连接对象
-                                    removeList.add(droneId);
+                                    removeList.add(deviceId);
                                 }
                             }
                             //清理无人机连接对象
-                            for (Integer droneId : removeList) {
-                                DroneControl clearDroneControl = droneMap.get(droneId);
+                            for (Integer deviceId : removeList) {
+                                DroneControl clearDroneControl = droneMap.get(deviceId);
                                 clearDroneControl.stopConnection();
+                                if (clearDroneControl.getControlType() == ControlType.CONTROL_CLUSTER) {
+                                    //删除linkhub配置文件
+                                    doDeleteDeviceProfile(clearDroneControl.getDeviceId());
+                                }
                                 clearDroneControl = null;
-                                droneMap.remove(droneId);
+                                droneMap.remove(deviceId);
                             }
                             //清理资源，释放内存，提醒虚拟机回收内存
                             System.gc();
@@ -182,25 +270,47 @@ public class DroneService implements DroneControl.DeviceStateChanged {
         return port;
     }
 
-    private void updateLinkhubProfile(int droneId, String droneName, String deviceHost, int devicePort, int linkhubPort) {
+    private static boolean doDeleteDeviceProfile(int deviceId) {
         try {
-            String droneProfileName = Worker.makeDroneProfileName(droneId);
+            String name = Worker.makeDroneProfileName(deviceId);
+            LinkhubProfileManager.deleteProfile(name);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    private void updateLinkhubProfile(int deviceId, String deviceName, String deviceHost, int devicePort, int linkhubPort, int deviceType) {
+        try {
+            String droneProfileName = "";
+            switch (deviceType) {
+                case DeviceType.BOAT:
+                    droneProfileName = Worker.makeBoatProfileName(deviceId);
+                    break;
+                case DeviceType.DRONE:
+                default:
+                    droneProfileName = Worker.makeDroneProfileName(deviceId);
+                    break;
+            }
+
+
             LinkhubProfile profile = null;
 
             if (Config.deviceUseRTCP) {
                 profile = new DroneOutIn2Profile(droneProfileName,
-                        droneName, Calendar.getInstance().getTime()
+                        deviceName, Calendar.getInstance().getTime()
                         .toGMTString(), "0", "device", deviceHost,
                         String.valueOf(devicePort), "1", "client", String.valueOf(linkhubPort),
                         Config.mavlogWorkspace,
-                        Worker.makeDroneMavlogPrefix(droneId));
+                        Worker.makeDroneMavlogPrefix(deviceId));
             } else {
                 profile = new DroneOutIn1Profile(droneProfileName,
-                        droneName, Calendar.getInstance().getTime()
+                        deviceName, Calendar.getInstance().getTime()
                         .toGMTString(), "0", "device", deviceHost,
                         String.valueOf(devicePort), "1", "client", String.valueOf(linkhubPort),
                         Config.mavlogWorkspace,
-                        Worker.makeDroneMavlogPrefix(droneId));
+                        Worker.makeDroneMavlogPrefix(deviceId));
             }
             if (!LinkhubProfileManager.updateProfile(profile)) {
                 LinkhubProfileManager.deleteProfile(profile.name);

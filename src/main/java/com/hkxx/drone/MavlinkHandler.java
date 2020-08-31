@@ -1083,20 +1083,20 @@ public class MavlinkHandler extends IoHandlerAdapter {
         try {
             //先发送hold指令，再发送reposition指令
             rt = setHold(session, targetSystemId, targetComponentId);
-//            CommandLong commandLong = CommandLong.builder()
-//                    .targetSystem(targetSystemId)
-//                    .targetComponent(targetComponentId)
-//                    .command(MavCmd.MAV_CMD_DO_REPOSITION)
-//                    .confirmation(0)
-//                    .param1(0)
-//                    .param2(0)
-//                    .param3(0)
-//                    .param4(0)
-//                    .param5((float) lat)
-//                    .param6((float) lng)
-//                    .param7(alt)
-//                    .build();
-//            rt = exeCmdLong(session, commandLong);
+            CommandLong commandLong = CommandLong.builder()
+                    .targetSystem(targetSystemId)
+                    .targetComponent(targetComponentId)
+                    .command(MavCmd.MAV_CMD_DO_REPOSITION)
+                    .confirmation(0)
+                    .param1(0)
+                    .param2(0)
+                    .param3(0)
+                    .param4(0)
+                    .param5((float) lat)
+                    .param6((float) lng)
+                    .param7(alt)
+                    .build();
+            rt = exeCmdLong(session, commandLong);
         } catch (Exception e) {
             e.printStackTrace();
             rt = false;

@@ -17,6 +17,8 @@ public class Config {
     public static int cmdTcpPort = 60000;
     public static boolean cmdUdpMode = true;
     public static int cmdUdpPort = 60000;
-
+    public static int tsSendHeartbeat = 5000; //发送心跳包的间隔，单位毫秒，默认5秒
+    public static boolean isTcpServerSendHeartbeat = true;
+    public static boolean isUdpServerSendHeartbeat = true;
 
 }
