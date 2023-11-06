@@ -32,6 +32,10 @@ public class DroneService implements DroneControl.DeviceStateChanged {
     private HashMap<Integer, DroneControl> droneMap = new HashMap<>();
     private HashMap<Integer, SwarmState> swarmStateMap = new HashMap<>();
     private Object synObject = new Object();
+    // Ports value - start from
+    int from = 58000;
+    // Ports value - to
+    int to = 58100;
 
     public DroneService() {
 
@@ -49,10 +53,12 @@ public class DroneService implements DroneControl.DeviceStateChanged {
         try {
             //扫描数据库，判断drone表是否有变化，若有变化则更新无人机控制表droneMap，更新linkhub配置文件通知linkhub服务刷新
             isStop = false;
+            initPorts(from, to);
             tCheckDroneState = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     log.info("DroneService is started.");
+
                     boolean isExist = false;
                     //待删除的控制对象id列表
                     List<Integer> removeList = new ArrayList<>();
@@ -235,6 +241,43 @@ public class DroneService implements DroneControl.DeviceStateChanged {
 
     public void stop() {
         isStop = true;
+    }
+
+    /*
+     * Insert available Ports into DB. This is important for a new deployment.
+     */
+    public static void initPorts(int from, int to) {
+        //检测port表是否为空，若为空则初始化port表，插入一系列可用端口；若不为空，则不处理
+        try {
+            SqlSession sqlSession = MybatisUtil.getSqlSession();
+            PortDao portDao = sqlSession.getMapper(PortDao.class);
+            List<PortEntity> portEntities = portDao.selectList(null);
+            if (portEntities.size() == 0) {
+                if (from <= 0 || from >= 65000 || to <= 0 || to >= 65000 || from > to) {
+                    return;
+                }
+                int cntSucc = 0;
+                for (int port = from; port < to; port++) {
+                    PortEntity p = new PortEntity();
+                    p.setAvailable(1);
+                    p.setCategory(Constants.CATEGORY_NONE);
+                    p.setValue(port);
+                    p.setReplayId(null);
+                    p.setDeviceId(null);
+                    portDao.insert(p);
+                    sqlSession.commit();
+                    if (p.getId() != null) {
+                        cntSucc++;
+                    }
+                }
+                System.out.println("Inserted ports:" + cntSucc);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            MybatisUtil.close();
+        }
+
     }
 
     private int genLinkhubPort(int droneId) {
@@ -743,6 +786,306 @@ public class DroneService implements DroneControl.DeviceStateChanged {
         }
         return rt;
     }
+
+    //拍照
+    public boolean shootPhoto(int deviceId, int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.shootPhoto(targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //回中
+    public boolean cameraCenter(int deviceId, int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.cameraCenter(targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //切换相机模式
+    public boolean changeCameraMode(int deviceId, int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.changeCameraMode(targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //开始或停止录像
+    public boolean triggerVideo(int deviceId, int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.triggerVideo(targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //夜视模式
+    public boolean ircNight(int deviceId, int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.ircNight(targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //白天模式
+    public boolean ircDay(int deviceId, int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.ircDay(targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //自动切换黑夜模式
+    public boolean ircAuto(int deviceId, int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.ircAuto(targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //放大
+    public boolean zoomPlus(int deviceId, int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.zoomPlus(targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //缩小
+    public boolean zoomMinus(int deviceId, int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.zoomMinus(targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //增加焦距
+    public boolean focusPlus(int deviceId, int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.focusPlus(targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //减小焦距
+    public boolean focusMinus(int deviceId, int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.focusMinus(targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //自动对焦
+    public boolean focusAuto(int deviceId, int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.focusAuto(targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //朝向模式锁头
+    public boolean cameraLockup(int deviceId, int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.cameraLockUp(targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //朝向模式跟随
+    public boolean cameraFollow(int deviceId, int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.cameraFollow(targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //跟踪
+    public boolean cameraTrack(int deviceId, int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.cameraTrack(targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //转动云台
+    public boolean moveGimbal(int deviceId, int targetSystemId, int targetComponentId, float pitch, float yaw) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.moveGimbal(targetSystemId, targetComponentId, pitch, yaw);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //打开抛投
+    public boolean openThrower(int deviceId, int targetSystemId, int targetComponentId, float channelId) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.setChannelState(targetSystemId, targetComponentId, 1, channelId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //关闭抛投
+    public boolean closeThrower(int deviceId, int targetSystemId, int targetComponentId, float channelId) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.setChannelState(targetSystemId, targetComponentId, 0, channelId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //设置通道状态
+    public boolean setChannelState(int deviceId, int targetSystemId, int targetComponentId, float state, float channelId) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.setChannelState(targetSystemId, targetComponentId, state, channelId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    public boolean manualControl(int deviceId, int deviceType, int targetSystemId, int targetComponentId, int x, int y, int z, int r) {
+        boolean rt = false;
+        try {
+            if (droneMap.containsKey(deviceId)) {
+                DroneControl droneControl = droneMap.get(deviceId);
+                rt = droneControl.manualControl(deviceType, targetSystemId, targetComponentId, x, y, z, r);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
 
     @Override
     public void onDeviceStateChanged(int deviceId, int state) {

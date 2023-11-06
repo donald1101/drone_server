@@ -12,5 +12,8 @@
         <result property="remark" column="remark"/>
     </resultMap>
 
+    <select id="selectByName" resultMap="deviceMap">
+        select * from device where name=#{name};
+    </select>
 
 </mapper>

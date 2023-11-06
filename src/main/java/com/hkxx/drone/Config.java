@@ -2,6 +2,7 @@ package com.hkxx.drone;
 
 public class Config {
     //无人机控制服务配置参数
+    public static boolean isUseDroneService = true; //是否启用无人机控制服务，如果做外网级联，有可能该服务无需启用
     public static String linkhubIP = "127.0.0.1";
     public static boolean deviceUseRTCP = true;
     public static String linkhubProfilePath = "/home/gatc/docs/restapi/linkhubprofiles";
@@ -20,5 +21,9 @@ public class Config {
     public static int tsSendHeartbeat = 5000; //发送心跳包的间隔，单位毫秒，默认5秒
     public static boolean isTcpServerSendHeartbeat = true;
     public static boolean isUdpServerSendHeartbeat = true;
+
+    //摇杆控制服务
+    public static boolean isUseJoystickService = false;
+    public static String joystickConfigFile = ""; //若有多个摇杆，则将多个摇杆的配置文件用逗号分开
 
 }

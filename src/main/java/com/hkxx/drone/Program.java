@@ -2,14 +2,17 @@ package com.hkxx.drone;
 
 import com.hkxx.common.TcpServer;
 import com.hkxx.common.UdpServer;
+import com.hkxx.drone.joystick.JoystickService;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.InputStream;
 import java.util.Properties;
 
-public class Program {
+public class Program implements KeyListener {
 
     private static Logger log = LoggerFactory.getLogger(Program.class);
 
@@ -18,12 +21,20 @@ public class Program {
         try {
 
             try {
+//                Scanner s = new Scanner(System.in);
+//                System.out.println("请输入字符串：");
+//                while (true) {
+//                    String line = s.nextLine();
+//                    if (line.equals("exit")) break;
+//                    System.out.println(">>>" + line);
+//                }
+
                 System.out.println(System.getProperty("user.dir"));
                 Properties prop = new Properties();
                 InputStream config = Program.class
                         .getResourceAsStream("/set.properties");
                 prop.load(config);
-
+                Config.isUseDroneService = Boolean.parseBoolean(prop.getProperty("isUseDroneService"));
                 Config.deviceUseRTCP = Boolean.parseBoolean(prop.getProperty("deviceUseRTCP"));
                 Config.linkhubIP = prop.getProperty("linkhubIP");
                 Config.linkhubProfilePath = prop.getProperty("linkhubProfilePath");
@@ -42,15 +53,20 @@ public class Program {
                 Config.isTcpServerSendHeartbeat = Boolean.parseBoolean(prop.getProperty("isTcpServerSendHeartbeat"));
                 Config.isUdpServerSendHeartbeat = Boolean.parseBoolean(prop.getProperty("isUdpServerSendHeartbeat"));
 
+                Config.isUseJoystickService = Boolean.parseBoolean(prop.getProperty("isUseJoystickService"));
+                Config.joystickConfigFile = prop.getProperty("joystickConfigFile");
             } catch (Exception e) {
                 // TODO: handle exception
                 log.error(e.getMessage());
             }
 
             //开启无人机控制服务
-            DroneService droneService = new DroneService();
-            droneService.setTsCheckTime(Config.checkDroneTime);
-            droneService.start();
+            DroneService droneService = null;
+            if (Config.isUseDroneService) {
+                droneService = new DroneService();
+                droneService.setTsCheckTime(Config.checkDroneTime);
+                droneService.start();
+            }
             CommandService commandService = new CommandService();
             commandService.setTsSendHeartbeat(Config.tsSendHeartbeat);
             commandService.setTcpServerSendHeartbeat(Config.isTcpServerSendHeartbeat);
@@ -66,6 +82,7 @@ public class Program {
                         new SimpleCodecFactory(decoder, encoder)));
                 CommandHandler handler = new CommandHandler();
                 handler.setDroneService(droneService);
+                handler.setCommandService(commandService);
                 tcpServer.setHandler(handler);
                 tcpServer.start();
                 commandService.setTcpServer(tcpServer);
@@ -82,11 +99,19 @@ public class Program {
                         new SimpleCodecFactory(decoder, encoder)));
                 CommandHandler handler = new CommandHandler();
                 handler.setDroneService(droneService);
+                handler.setCommandService(commandService);
                 udpServer.setHandler(handler);
                 udpServer.start();
                 commandService.setUdpServer(udpServer);
             }
             commandService.start();
+
+            JoystickService joystickService = null;
+            if (Config.isUseJoystickService) {
+                //开启摇杆接入服务
+                joystickService = new JoystickService();
+                joystickService.start();
+            }
 
         } catch (Exception e) {
             // TODO: handle exception
@@ -95,4 +120,18 @@ public class Program {
 
     }
 
+    @Override
+    public void keyTyped(KeyEvent e) {
+        log.info("keyTyped:" + e.getKeyCode());
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        log.info("keyTyped:" + e.getKeyCode());
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+        log.info("keyTyped:" + e.getKeyCode());
+    }
 }

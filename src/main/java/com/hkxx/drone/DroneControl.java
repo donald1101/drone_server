@@ -398,7 +398,7 @@ public class DroneControl {
         return rt;
     }
 
-    //返航
+    //指点飞行
     public boolean gotoPosition(int targetSystemId, int targetComponentId, double lat, double lng, float alt) {
         boolean rt = false;
         try {
@@ -435,6 +435,275 @@ public class DroneControl {
             if (client != null) {
                 MavlinkHandler handler = (MavlinkHandler) client.getHandler();
                 rt = handler.takeoff(client.getSession(), targetSystemId, targetComponentId, alt);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //拍照
+    public boolean shootPhoto(int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (client != null) {
+                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
+                rt = handler.shootPhoto(client.getSession(), targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //回中
+    public boolean cameraCenter(int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (client != null) {
+                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
+                rt = handler.cameraCenter(client.getSession(), targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //切换相机模式
+    public boolean changeCameraMode(int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (client != null) {
+                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
+                rt = handler.changeCameraMode(client.getSession(), targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //开始或停止录像
+    public boolean triggerVideo(int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (client != null) {
+                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
+                rt = handler.triggerVideo(client.getSession(), targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //夜视模式
+    public boolean ircNight(int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (client != null) {
+                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
+                rt = handler.ircNight(client.getSession(), targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //白天模式
+    public boolean ircDay(int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (client != null) {
+                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
+                rt = handler.ircDay(client.getSession(), targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //自动切换黑夜模式
+    public boolean ircAuto(int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (client != null) {
+                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
+                rt = handler.ircAuto(client.getSession(), targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //放大
+    public boolean zoomPlus(int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (client != null) {
+                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
+                rt = handler.zoomPlus(client.getSession(), targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //缩小
+    public boolean zoomMinus(int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (client != null) {
+                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
+                rt = handler.zoomMinus(client.getSession(), targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //增加焦距
+    public boolean focusPlus(int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (client != null) {
+                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
+                rt = handler.focusPlus(client.getSession(), targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //减小焦距
+    public boolean focusMinus(int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (client != null) {
+                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
+                rt = handler.focusMinus(client.getSession(), targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //自动对焦
+    public boolean focusAuto(int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (client != null) {
+                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
+                rt = handler.focusAuto(client.getSession(), targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //朝向模式锁头
+    public boolean cameraLockUp(int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (client != null) {
+                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
+                rt = handler.cameraLockUp(client.getSession(), targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //朝向模式跟随
+    public boolean cameraFollow(int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (client != null) {
+                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
+                rt = handler.cameraFollow(client.getSession(), targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //跟踪
+    public boolean cameraTrack(int targetSystemId, int targetComponentId) {
+        boolean rt = false;
+        try {
+            if (client != null) {
+                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
+                rt = handler.cameraTrack(client.getSession(), targetSystemId, targetComponentId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //转动云台
+    public boolean moveGimbal(int targetSystemId, int targetComponentId, float pitch, float yaw) {
+        boolean rt = false;
+        try {
+            if (client != null) {
+                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
+                rt = handler.moveGimbal(client.getSession(), targetSystemId, targetComponentId, pitch, yaw);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    //设置通道开关量状态
+    public boolean setChannelState(int targetSystemId, int targetComponentId, float state, float channelId) {
+        boolean rt = false;
+        try {
+            if (client != null) {
+                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
+                rt = handler.setChannelState(client.getSession(), targetSystemId, targetComponentId, state, channelId);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            rt = false;
+        }
+        return rt;
+    }
+
+    public boolean manualControl(int deviceType, int targetSystemId, int targetComponentId, int x, int y, int z, int r) {
+        boolean rt = false;
+        try {
+            if (client != null) {
+                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
+                rt = handler.manualControl(client.getSession(), deviceType, targetSystemId, targetComponentId, x, y, z, r);
             }
         } catch (Exception e) {
             e.printStackTrace();

@@ -360,7 +360,7 @@ public class Convert {
      * <p>
      * x度 = x*π/360 弧度
      *
-     * @param d
+     * @param degree
      * @return
      * @author chiwei
      * @since JDK 1.6
@@ -533,4 +533,87 @@ public class Convert {
         return temp;
     }
 
+    /**
+     * 删除指定字符串中的空格
+     *
+     * @param src
+     * @return
+     */
+    public static String deleteSpace(String src) {
+        StringBuffer rt = new StringBuffer();
+        char ch = 0;
+        for (int i = 0; i < src.length(); i++) {
+            ch = src.charAt(i);
+            if (ch != ' ') {
+                rt.append(ch);
+            }
+        }
+
+        return rt.toString();
+    }
+
+    /**
+     * @param data
+     * @return
+     */
+    public static int bytesToUnsignedInt(byte[] data) {
+        int rt = 0;
+        if (data.length == 1) {
+            rt = data[0] & 0xff;
+        } else if (data.length == 2) {
+            rt = data[0] & 0xff + ((data[1] & 0xff) << 8);
+        } else if (data.length == 3) {
+            rt = data[0] & 0xff + ((data[1] & 0xff) << 8) + ((data[2] & 0xff) << 16);
+        } else if (data.length == 4) {
+            rt = data[0] & 0xff + ((data[1] & 0xff) << 8) + ((data[2] & 0xff) << 16) + ((data[3] & 0xff) << 24);
+        }
+        return rt;
+    }
+
+    public static int bytesToSignedInt(byte[] data) {
+        int rt = 0;
+        if (data.length == 1) {
+            rt = data[0];
+        } else if (data.length == 2) {
+            rt = data[0] & 0xff + ((data[1]) << 8);
+        } else if (data.length == 3) {
+            rt = data[0] & 0xff + ((data[1] & 0xff) << 8) + ((data[2]) << 16);
+        } else if (data.length == 4) {
+            rt = data[0] & 0xff + ((data[1] & 0xff) << 8) + ((data[2] & 0xff) << 16) + ((data[3]) << 24);
+        }
+        return rt;
+    }
+
+    /**
+     * 将一个int类型转换为二进制字符串形式，不够有效位数的前面补0填充
+     *
+     * @param a               整型数据
+     * @param effectiveLength 有效位数
+     * @return
+     */
+    public static String intToBinaryString(int a, int effectiveLength) {
+        String rt = "";
+        rt = Integer.toBinaryString(a);
+        if (rt.length() < effectiveLength) {
+            StringBuffer stringBuffer = new StringBuffer(rt);
+            for (int i = 0; i < effectiveLength - rt.length(); i++) {
+                stringBuffer.insert(0, '0');
+            }
+            rt = stringBuffer.toString();
+        }
+        return rt;
+    }
+
+    public static String longToBinaryString(long a, int effectiveLength) {
+        String rt = "";
+        rt = Long.toBinaryString(a);
+        if (rt.length() < effectiveLength) {
+            StringBuffer stringBuffer = new StringBuffer(rt);
+            for (int i = 0; i < effectiveLength - rt.length(); i++) {
+                stringBuffer.insert(0, '0');
+            }
+            rt = stringBuffer.toString();
+        }
+        return rt;
+    }
 }

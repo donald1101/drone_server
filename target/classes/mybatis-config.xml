@@ -7,16 +7,16 @@
         <!-- 警戒外网 -->
         <property name="devdriver" value="com.mysql.cj.jdbc.Driver"/>
         <property name="devurl"
-                  value="jdbc:mysql://127.0.0.1:3306/drone_cmd?serverTimezone=Asia/Shanghai&amp;useUnicode=true&amp;characterEncoding=UTF-8"/>
+                  value="jdbc:mysql://127.0.0.1:3306/drone_cmd_jingyong3?serverTimezone=Asia/Shanghai&amp;useUnicode=true&amp;characterEncoding=UTF-8"/>
         <property name="devuser" value="root"/>
-        <property name="devpass" value="wrj@709"/>
+        <property name="devpass" value="gatc@709"/>
 
     </properties>
 
     <settings>
         <setting name="logImpl" value="SLF4J"/>
         <setting name="mapUnderscoreToCamelCase" value="true"/>
-        <setting name="logImpl" value="STDOUT_LOGGING"/>
+        <!--        <setting name="logImpl" value="STDOUT_LOGGING"/>-->
     </settings>
 
     <environments default="development">
@@ -41,6 +41,10 @@
         <mapper resource="mapper/SwarmDao.xml"/>
         <mapper resource="mapper/SwarmDeviceDao.xml"/>
         <mapper resource="mapper/TaskDao.xml"/>
+        <mapper resource="mapper/UserDao.xml"/>
+        <mapper resource="mapper/UserStatusDao.xml"/>
+        <mapper resource="mapper/SignLayerDao.xml"/>
+        <mapper resource="mapper/AisInfoDao.xml"/>
     </mappers>
 
 

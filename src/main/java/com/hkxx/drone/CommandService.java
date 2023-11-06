@@ -48,6 +48,10 @@ public class CommandService {
         tCheckCommandState.start();
     }
 
+    public void stop() {
+        isStop = true;
+    }
+
     public void tcpServerBroadcastData(byte[] data) {
         try {
             if (tcpServer != null) {
