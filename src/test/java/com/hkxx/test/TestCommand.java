@@ -1,13 +1,16 @@
 package com.hkxx.test;
 
 import com.google.gson.Gson;
-import com.hkxx.drone.ClientType;
-import com.hkxx.drone.CommandType;
-import com.hkxx.drone.InstructionType;
-import com.hkxx.drone.TaskType;
+import com.hkxx.common.Convert;
+import com.hkxx.common.MultiCastUdpServer;
+import com.hkxx.common.UdpClient;
+import com.hkxx.common.UdpServer;
+import com.hkxx.drone.*;
 import com.hkxx.drone.db.entity.*;
 import com.hkxx.drone.joystick.ButtonMap;
 import com.hkxx.drone.joystick.X56LeftConfig;
+import org.apache.mina.core.buffer.IoBuffer;
+import org.apache.mina.filter.codec.ProtocolCodecFilter;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -418,4 +421,88 @@ public class TestCommand {
         }
     }
 
+    @Test
+    public void testUdpMultiCastClient() {
+        try {
+            UdpClient udpClient = new UdpClient();
+            udpClient.setServerIP("234.186.3.1");
+            //udpClient.setServerIP("127.0.0.1");
+            udpClient.setIdleTime(Config.idleTime);
+            udpClient.setConnectTimeout(Config.connectTimeout);
+            udpClient.setServerPort(8203);
+            //udpClient.setServerPort(60000);
+//            udpClient.getConnector().getSessionConfig().setReuseAddress(true);
+//            udpClient.getConnector().getSessionConfig().setBroadcast(true);
+
+
+            CommandEncoder encoder = new CommandEncoder();
+            CommandDecoder decoder = new CommandDecoder();
+            udpClient.setFilter(new ProtocolCodecFilter(new SimpleCodecFactory(
+                    decoder, encoder)));
+            CommandHandler handler = new CommandHandler();
+            udpClient.setHandler(handler);
+            udpClient.initial();
+            udpClient.connect();
+            udpClient.send(IoBuffer.wrap("test udp multicast".getBytes(StandardCharsets.UTF_8)));
+            System.in.read();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testUdpServer() {
+        try {
+            UdpServer udpServer = new UdpServer();
+            udpServer.setIdleTime(Config.idleTime);
+            udpServer.setServerPort(8203);
+            CommandEncoder encoder = new CommandEncoder();
+            CommandDecoder decoder = new CommandDecoder();
+            udpServer.setFilter(new ProtocolCodecFilter(
+                    new SimpleCodecFactory(decoder, encoder)));
+            CommandHandler handler = new CommandHandler();
+            udpServer.setHandler(handler);
+            udpServer.start();
+            System.in.read();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testUdpMultiCastServer() {
+        try {
+            MultiCastUdpServer udpServer = new MultiCastUdpServer();
+            udpServer.setIdleTime(Config.idleTime);
+            udpServer.setServerPort(8203);
+            udpServer.setGroup("234.186.3.1");
+            udpServer.setNetworkInterface("192.168.2.233");
+            CommandEncoder encoder = new CommandEncoder();
+            CommandDecoder decoder = new CommandDecoder();
+            udpServer.setFilter(new ProtocolCodecFilter(
+                    new SimpleCodecFactory(decoder, encoder)));
+            CommandHandler handler = new CommandHandler();
+            udpServer.setHandler(handler);
+            udpServer.start();
+            System.in.read();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testUtf8() {
+        try {
+            long a = 2548476052L;
+            System.out.println(Long.toHexString(a));
+            byte[] buf = Convert.hexStringToByteWithSpace("e6 9c ba e8 bd bd e9 a2 84 e8 ad a6 e9 9b b7 e8 be be 5f 31 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00");
+            String bufString = Convert.bytesToHexString(buf, true);
+            System.out.println(bufString);
+            String s = new String(buf, StandardCharsets.UTF_8);
+            System.out.println(s);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

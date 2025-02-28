@@ -104,7 +104,7 @@ public class MavlinkDecoder extends CumulativeProtocolDecoder {
 
         byte stx = 0; // 数据包的起始字节，即包头stx
         byte current = 0; // 当前字节内容
-        byte length = 0; // 单个数据包的长度
+        int length = 0; // 单个数据包的长度
         boolean isBegin = false; // 是否找到包头
 
         byte stx_mavlink_v1 = (byte) (0xfe & 0xff); // mavlink第一版的包头，0xfe默认是int型，需要处理，转为byte
@@ -137,6 +137,7 @@ public class MavlinkDecoder extends CumulativeProtocolDecoder {
                         if (in.hasRemaining()) {
                             // 取长度字节
                             length = in.get();
+                            length = length & 0xff; //length必须为无符号数
                             // 与当前pos位置比较计算数据包剩余字节
                             length += 6;
 
@@ -184,6 +185,7 @@ public class MavlinkDecoder extends CumulativeProtocolDecoder {
                         if (in.hasRemaining()) {
                             // 取长度字节
                             length = in.get();
+                            length = length & 0xff; //length必须为无符号数
                             // 判断是否包含signature数据
                             if (in.remaining() > 0) {
                                 // 读取inc flags字段，根据该字段，与当前pos位置比较计算数据包剩余字节

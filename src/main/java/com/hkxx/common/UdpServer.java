@@ -10,119 +10,123 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 
 public class UdpServer {
-	private static Logger log = LoggerFactory.getLogger(UdpServer.class); // 日志对象
-	private NioDatagramAcceptor acceptor = new NioDatagramAcceptor(); // UDP服务器对象
+    private static Logger log = LoggerFactory.getLogger(UdpServer.class); // 日志对象
+    private NioDatagramAcceptor acceptor = new NioDatagramAcceptor(); // UDP服务器对象
 
-	// 调用start之前，需要初始化的参数
-	String name = "local"; // UDP服务器对象名称
-	int recvBufSize = 4096000; // Session读缓冲区大小
-	int idleTime = 10 * 60; // Session进入空闲状态的时间间隔，单位秒
-	int serverPort = 60000; // UDP服务器端口号
-	IoFilter filter = null; // 编解码，过滤器
-	IoHandler handler = null;// 处理器
+    // 调用start之前，需要初始化的参数
+    String name = "local"; // UDP服务器对象名称
+    int recvBufSize = 4096000; // Session读缓冲区大小
+    int idleTime = 10 * 60; // Session进入空闲状态的时间间隔，单位秒
+    int serverPort = 60000; // UDP服务器端口号
+    IoFilter filter = null; // 编解码，过滤器
+    IoHandler handler = null;// 处理器
 
-	// 启动UDP服务器
-	public void start() {
-		try {
-			// 设置session的读缓冲区大小
-			acceptor.getSessionConfig().setMinReadBufferSize(64 * 1024);
-			// acceptor.getSessionConfig().setReadBufferSize(recvBufSize);
-			acceptor.getSessionConfig().setReceiveBufferSize(recvBufSize);
-			// 设置session的进入空闲时间间隔
-			acceptor.getSessionConfig().setIdleTime(IdleStatus.READER_IDLE,
-					idleTime);
-			// 加载编解码，过滤器
-			if (filter != null) {
-				acceptor.getFilterChain().addLast("codec", filter);
-			}
-			// 加载处理器
-			if (handler != null) {
-				acceptor.setHandler(handler);
-			}
-			// 绑定端口，并启动服务器
-			acceptor.bind(new InetSocketAddress(serverPort));
-			// log.info("MinReadBufSize:"
-			// + acceptor.getSessionConfig().getMinReadBufferSize());
-			// log.info("ReadBufferSize:"
-			// + acceptor.getSessionConfig().getReadBufferSize());
-			// log.info("ReceiveBufferSize:"
-			// + acceptor.getSessionConfig().getReceiveBufferSize());
-			// log.info("SendBufferSize:"
-			// + acceptor.getSessionConfig().getSendBufferSize());
-			log.info("UDP Server Started.Name:" + name + " Port:" + serverPort);
-		} catch (Exception e) {
-			// TODO: handle exception
-			log.error(e.getMessage());
-		}
-	}
+    // 启动UDP服务器
+    public void start() {
+        try {
+            // 设置session的读缓冲区大小
+            acceptor.getSessionConfig().setMinReadBufferSize(64 * 1024);
+            // acceptor.getSessionConfig().setReadBufferSize(recvBufSize);
+            acceptor.getSessionConfig().setReceiveBufferSize(recvBufSize);
+            // 设置session的进入空闲时间间隔
+            acceptor.getSessionConfig().setIdleTime(IdleStatus.READER_IDLE,
+                    idleTime);
+            // 加载编解码，过滤器
+            if (filter != null) {
+                acceptor.getFilterChain().addLast("codec", filter);
+            }
+            // 加载处理器
+            if (handler != null) {
+                acceptor.setHandler(handler);
+            }
+            //MulticastSocketProvider provider = new MulticastSocketProvider("224.0.1.100", 9999);
+            // 绑定端口，并启动服务器
 
-	// 停止UDP服务器
-	public void stop() {
-		try {
-			if (acceptor != null) {
-				acceptor.unbind();
-				acceptor.dispose();
-			}
+            ////测试udp组播接收
+            //acceptor.bind(new InetSocketAddress("234.186.3.1", serverPort));
+            acceptor.bind(new InetSocketAddress(serverPort));
+            // log.info("MinReadBufSize:"
+            // + acceptor.getSessionConfig().getMinReadBufferSize());
+            // log.info("ReadBufferSize:"
+            // + acceptor.getSessionConfig().getReadBufferSize());
+            // log.info("ReceiveBufferSize:"
+            // + acceptor.getSessionConfig().getReceiveBufferSize());
+            // log.info("SendBufferSize:"
+            // + acceptor.getSessionConfig().getSendBufferSize());
+            log.info("UDP Server Started.Name:" + name + " Port:" + serverPort);
+        } catch (Exception e) {
+            // TODO: handle exception
+            log.error(e.getMessage());
+        }
+    }
 
-		} catch (Exception e) {
-			// TODO: handle exception
-			log.error(e.getMessage());
-		}
-	}
+    // 停止UDP服务器
+    public void stop() {
+        try {
+            if (acceptor != null) {
+                acceptor.unbind();
+                acceptor.dispose();
+            }
 
-	public NioDatagramAcceptor getAcceptor() {
-		return acceptor;
-	}
+        } catch (Exception e) {
+            // TODO: handle exception
+            log.error(e.getMessage());
+        }
+    }
 
-	public void setAcceptor(NioDatagramAcceptor value) {
-		acceptor = value;
-	}
+    public NioDatagramAcceptor getAcceptor() {
+        return acceptor;
+    }
 
-	public String getName() {
-		return name;
-	}
+    public void setAcceptor(NioDatagramAcceptor value) {
+        acceptor = value;
+    }
 
-	public void setName(String value) {
-		name = value;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public int getReadBufSize() {
-		return recvBufSize;
-	}
+    public void setName(String value) {
+        name = value;
+    }
 
-	public void setReadBufSize(int value) {
-		recvBufSize = value;
-	}
+    public int getReadBufSize() {
+        return recvBufSize;
+    }
 
-	public int getIdleTime() {
-		return idleTime;
-	}
+    public void setReadBufSize(int value) {
+        recvBufSize = value;
+    }
 
-	public void setIdleTime(int value) {
-		idleTime = value;
-	}
+    public int getIdleTime() {
+        return idleTime;
+    }
 
-	public int getServerPort() {
-		return serverPort;
-	}
+    public void setIdleTime(int value) {
+        idleTime = value;
+    }
 
-	public void setServerPort(int value) {
-		serverPort = value;
-	}
+    public int getServerPort() {
+        return serverPort;
+    }
 
-	public IoFilter getFilter() {
-		return filter;
-	}
+    public void setServerPort(int value) {
+        serverPort = value;
+    }
 
-	public void setFilter(IoFilter value) {
-		filter = value;
-	}
+    public IoFilter getFilter() {
+        return filter;
+    }
 
-	public IoHandler getHandler() {
-		return handler;
-	}
+    public void setFilter(IoFilter value) {
+        filter = value;
+    }
 
-	public void setHandler(IoHandler value) {
-		handler = value;
-	}
+    public IoHandler getHandler() {
+        return handler;
+    }
+
+    public void setHandler(IoHandler value) {
+        handler = value;
+    }
 }

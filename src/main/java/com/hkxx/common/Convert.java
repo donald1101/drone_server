@@ -30,6 +30,19 @@ public class Convert {
         return result;
     }
 
+    public static byte[] hexStringToByteWithSpace(String hex) {
+        //去掉空格
+        StringBuffer sb = new StringBuffer();
+        char[] buf = hex.toCharArray();
+        for (int i = 0; i < buf.length; i++) {
+            if (buf[i] != ' ') {
+                sb.append(buf[i]);
+            }
+        }
+        return hexStringToByte(sb.toString());
+    }
+
+
     private static byte toByte(char c) {
         byte b = (byte) "0123456789ABCDEF".indexOf(c);
         return b;

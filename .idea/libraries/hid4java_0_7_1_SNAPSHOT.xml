@@ -4,8 +4,6 @@
       <root url="jar://$PROJECT_DIR$/libs/hid4java-0.7.1-SNAPSHOT.jar!/" />
     </CLASSES>
     <JAVADOC />
-    <SOURCES>
-      <root url="jar://$PROJECT_DIR$/libs/hid4java-0.7.1-SNAPSHOT-sources.jar!/" />
-    </SOURCES>
+    <SOURCES />
   </library>
 </component>

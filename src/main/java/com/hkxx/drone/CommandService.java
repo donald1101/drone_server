@@ -1,5 +1,5 @@
 package com.hkxx.drone;
-
+//服务器端给客户端发送心跳包
 import com.hkxx.common.TcpServer;
 import com.hkxx.common.UdpServer;
 import org.apache.mina.core.buffer.IoBuffer;

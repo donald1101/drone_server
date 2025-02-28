@@ -831,7 +831,7 @@ public class MavlinkHandler extends IoHandlerAdapter {
                                     .param1(0)
                                     .param2(0)
                                     .param3(0)
-                                    .param4(Float.NaN)
+                                    .param4(Float.NaN) //.param4(0) 若出现异常则该参数设置为0
                                     .x((int) (waypoint.getLat() * Math.pow(10, 7)))
                                     .y((int) (waypoint.getLng() * Math.pow(10, 7)))
                                     .z(waypoint.getAlt())

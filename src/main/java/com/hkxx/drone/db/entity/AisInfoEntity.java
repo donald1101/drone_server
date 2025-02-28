@@ -8,7 +8,7 @@ import java.util.Date;
 import lombok.Data;
 
 /**
- * ais信息表
+ * ais信息表  ais-船舶自动识别系统
  * 
  * @author JiangCheng
  * @email jctc008@126.com
