@@ -1,10 +1,10 @@
 package com.hkxx.test;
 
 import com.google.gson.Gson;
-import com.hkxx.common.Convert;
-import com.hkxx.common.MultiCastUdpServer;
-import com.hkxx.common.UdpClient;
-import com.hkxx.common.UdpServer;
+import com.hkxx.drone.common.Convert;
+import com.hkxx.drone.common.MultiCastUdpServer;
+import com.hkxx.drone.common.UdpClient;
+import com.hkxx.drone.common.UdpServer;
 import com.hkxx.drone.*;
 import com.hkxx.drone.db.entity.*;
 import com.hkxx.drone.joystick.ButtonMap;

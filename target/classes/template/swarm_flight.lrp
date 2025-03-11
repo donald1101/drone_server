@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "name": "__ROUTER_NAME__",
+    "desc": "__ROUTER_DESC__",
+    "updateDate": "__ROUTER_UPDATE_DATE__",
+    "router": {
+        "routerLinkInterfaces": ["java.util.HashMap", {
+			__RLI_ARRAY__
+        }],
+        "routerRules": ["java.util.HashMap", {
+        	__RR_ARRAY__
+        }]
+    }
+}

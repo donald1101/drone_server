@@ -1,0 +1,21 @@
+[Unit]
+Description=__UNIT_DESC__
+After=network.target
+
+[Service]
+# Foreground process (do not use --daemon in ExecStart or config.rb)
+Type=simple
+
+# Preferably configure a non-privileged user
+User=__USER__
+
+# The path to the application root
+WorkingDirectory=__WORKING_DIR__
+
+# The command to start service.
+ExecStart=__EXEC_START__
+
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

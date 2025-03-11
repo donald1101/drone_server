@@ -1,0 +1,22 @@
+            "__DEVICE_ID__": {
+                "ID": "__DEVICE_ID__",
+                "name": "__DEVICE_NAME__",
+                "commConfig": ["com.ramytech.rts.linkhub.bean.licconfig.TCPOutConfig", {
+                    "type": 2,
+                    "expirationTime": null,
+					"filters": ["java.util.ArrayList", [
+                                ["com.ramytech.rts.linkhub.handler.comm.filter.MavlinkMessageIdIncludeFilter", {
+                                    "msgIds": ["java.util.ArrayList", [246]]
+                                }]
+                            ]],                    
+                    "inputFilters": ["java.util.ArrayList", [0]],
+                    "outputFilters": null,
+                    "serverAddr": "__DEVICE_HOST__",
+                    "serverPort": __DEVICE_PORT__,
+                    "connectTimeout": 10000
+                }],
+                "protocolConfig": ["com.ramytech.rts.linkhub.bean.lipconfig.MavlinkProtocolConfig", {
+                    "type": 1,
+                    "payloadType": null
+                }]
+            }

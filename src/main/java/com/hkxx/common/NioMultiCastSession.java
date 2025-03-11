@@ -1,4 +1,4 @@
-package com.hkxx.common;
+package com.hkxx.drone.common;
 
 import org.apache.mina.core.filterchain.DefaultIoFilterChain;
 import org.apache.mina.core.filterchain.IoFilterChain;

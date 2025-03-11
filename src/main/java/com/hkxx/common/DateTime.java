@@ -1,4 +1,4 @@
-package com.hkxx.common;
+package com.hkxx.drone.common;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

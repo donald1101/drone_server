@@ -1,7 +1,7 @@
 package com.hkxx.drone;
 
-import com.hkxx.common.DateTime;
-import com.hkxx.common.TcpClient;
+import com.hkxx.drone.common.DateTime;
+import com.hkxx.drone.common.TcpClient;
 import com.hkxx.drone.db.entity.PointFlyContent;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
 import org.slf4j.Logger;

@@ -1,7 +1,7 @@
 package com.hkxx.drone;
 
-import com.hkxx.common.TcpServer;
-import com.hkxx.common.UdpServer;
+import com.hkxx.drone.common.TcpServer;
+import com.hkxx.drone.common.UdpServer;
 import com.hkxx.drone.joystick.JoystickService;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
 import org.slf4j.Logger;

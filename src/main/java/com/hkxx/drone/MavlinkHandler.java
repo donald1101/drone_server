@@ -2,8 +2,8 @@ package com.hkxx.drone;
 
 import com.MAVLink.common.*;
 import com.MAVLink.enums.MAV_COMPONENT;
-import com.hkxx.common.Convert;
-import com.hkxx.common.DateTime;
+import com.hkxx.drone.common.Convert;
+import com.hkxx.drone.common.DateTime;
 import com.hkxx.drone.db.MybatisUtil;
 import com.hkxx.drone.db.dao.CurrentStatusDao;
 import com.hkxx.drone.db.entity.CurrentStatusEntity;

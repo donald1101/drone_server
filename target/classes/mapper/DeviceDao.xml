@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.hkxx.drone.db.dao.DeviceDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.hkxx.drone.db.entity.DeviceEntity" id="deviceMap">
+        <result property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="deviceType" column="device_type"/>
+        <result property="deviceNo" column="device_no"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <select id="selectByName" resultMap="deviceMap">
+        select * from device where name=#{name};
+    </select>
+
+</mapper>

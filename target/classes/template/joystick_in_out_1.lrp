@@ -1,0 +1,53 @@
+{
+    "version": 1,
+    "name": "__ROUTER_NAME__",
+    "desc": "__ROUTER_DESC__",
+    "updateDate": "__ROUTER_UPDATE_DATE__",
+    "router": {
+        "routerLinkInterfaces": ["java.util.HashMap", {
+            "__JS_ID__": {
+                "ID": "__JS_ID__",
+                "name": "__JS_NAME__",
+                "commConfig": ["com.ramytech.rts.linkhub.bean.licconfig.TCPInMultiEndConfig", {
+                    "type": 4,
+                    "expirationTime": null,
+                    "filters": null,
+                    "inputFilters": null,
+                    "outputFilters": null,
+                    "listenAddr": "0.0.0.0",
+                    "listenPort": __JS_PORT__
+                }],
+                "protocolConfig": ["com.ramytech.rts.linkhub.bean.lipconfig.MavlinkProtocolConfig", {
+                    "type": 1,
+                    "payloadType": null
+                }]
+            },
+            "__DEVICE_ID__": {
+                "ID": "__DEVICE_ID__",
+                "name": "__DEVICE_NAME__",
+                "commConfig": ["com.ramytech.rts.linkhub.bean.licconfig.TCPOutConfig", {
+                    "type": 2,
+                    "expirationTime": null,
+                    "filters": ["java.util.ArrayList", [
+                        ["com.ramytech.rts.linkhub.handler.comm.filter.MavlinkTargetSysReplaceFilter", {
+                            "targetSys": __DEVICE_TARGET_SYSID__,
+                            "msgId": 76
+                        }]
+                    ]],
+                    "inputFilters": null,
+                    "outputFilters": ["java.util.ArrayList", [0]],
+                    "serverAddr": "__DEVICE_HOST__",
+                    "serverPort": __DEVICE_PORT__,
+                    "connectTimeout": 10000
+                }],
+                "protocolConfig": ["com.ramytech.rts.linkhub.bean.lipconfig.MavlinkProtocolConfig", {
+                    "type": 1,
+                    "payloadType": null
+                }]
+            }
+        }],
+        "routerRules": ["java.util.HashMap", {
+            "__JS_ID__": ["java.util.ArrayList", ["__DEVICE_ID__"]]
+        }]
+    }
+}
