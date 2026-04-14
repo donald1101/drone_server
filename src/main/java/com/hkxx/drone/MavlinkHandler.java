@@ -2,13 +2,14 @@ package com.hkxx.drone;
 
 import com.MAVLink.common.*;
 import com.MAVLink.enums.MAV_COMPONENT;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.hkxx.drone.common.Convert;
 import com.hkxx.drone.common.DateTime;
-import com.hkxx.drone.db.MybatisUtil;
-import com.hkxx.drone.db.dao.CurrentStatusDao;
 import com.hkxx.drone.db.entity.CurrentStatusEntity;
 import com.hkxx.drone.db.entity.PointFlyContent;
 import com.hkxx.drone.db.entity.Waypoint;
+import com.hkxx.mq.RabbitProducer;
 import io.dronefleet.mavlink.common.*;
 import io.dronefleet.mavlink.protocol.MavlinkPacket;
 import io.dronefleet.mavlink.util.EnumValue;
@@ -21,12 +22,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
-public class MavlinkHandler extends IoHandlerAdapter {
+public class MavlinkHandler<LinkdedHashMap> extends IoHandlerAdapter {
 
     private static Logger log = LoggerFactory.getLogger(MavlinkHandler.class);
 
@@ -53,8 +51,12 @@ public class MavlinkHandler extends IoHandlerAdapter {
 //    String paramSetId = ""; //设置参数名字
 //    float paramSetValue = 0; //设置参数
 
+    //无人机状态对象
+    CurrentStatusEntity msgDroneStatus = new CurrentStatusEntity();
     //param参数列表
     HashMap<String, Float> paramList = new HashMap<>();
+    //无人机实时状态参数列表
+    HashMap<String,Object> droneStatus = new LinkedHashMap<>();
 
     //统计接收到的msgId类型，存放到列表中，用于调试分析
     List<Integer> msgIds = new ArrayList<>();
@@ -176,8 +178,7 @@ public class MavlinkHandler extends IoHandlerAdapter {
         super.sessionClosed(session);
         InetSocketAddress remote = (InetSocketAddress) session
                 .getRemoteAddress();
-        log.info("Session closed." + remote.getHostString() + ":"
-                + remote.getPort());
+        log.info("Session closed." + remote.getHostString() + ":" + remote.getPort());
     }
 
     @Override
@@ -208,10 +209,10 @@ public class MavlinkHandler extends IoHandlerAdapter {
     }
 
     private void processMsgHeartbeat(IoSession session, MavlinkPacket packet) {
-        // log.info("recv Heartbeat:" + Convert.bytesToHexString(data, true));
+        //log.info("recv Heartbeat:" + Convert.bytesToHexString(data, true));
         try {
             Heartbeat heartbeat = (Heartbeat) MavlinkUtil.packetToPayloadObject(packet);
-            CurrentStatusEntity msgDroneStatus = new CurrentStatusEntity();
+            
             msgDroneStatus.setDeviceId(droneControl.getDeviceId());
             msgDroneStatus.setUpdateTime(DateTime.Now());
             msgDroneStatus.setState(heartbeat.systemStatus().value());
@@ -220,16 +221,17 @@ public class MavlinkHandler extends IoHandlerAdapter {
             //更新会话时间戳
             if (droneControl != null) {
                 droneControl.setLastSessionTime(new Date());
+//              log.info("recv Heartbeat");
                 //检测无人机状态跳变
                 int lastState = droneControl.getDeviceState();
                 droneControl.setDeviceState(msgDroneStatus.getState());
                 int nowState = droneControl.getDeviceState();
                 if (lastState == 3 && nowState == 4) {
                     //表示从standby到active，说明无人机起飞了，传递state为0,
-                    droneControl.notifyDeviceStateChanged(0);
+                    log.info("无人机已起飞");
                 } else if (lastState == 4 && nowState == 3) {
                     //表示从active到standby，说明无人机已经着陆，任务结束
-                    droneControl.notifyDeviceStateChanged(1);
+                    log.info("无人机已着陆");
                 }
             }
         } catch (Exception e) {
@@ -305,7 +307,7 @@ public class MavlinkHandler extends IoHandlerAdapter {
             //log.info("recv Attitude:" + Convert.bytesToHexString(packet.getRawBytes(), true));
             Attitude attitude = (Attitude) MavlinkUtil.packetToPayloadObject(packet);
 
-            CurrentStatusEntity msgDroneStatus = new CurrentStatusEntity();
+            
             msgDroneStatus.setDeviceId(droneControl.getDeviceId());
             msgDroneStatus.setUpdateTime(DateTime.Now());
 
@@ -349,7 +351,7 @@ public class MavlinkHandler extends IoHandlerAdapter {
             //writeDataToFile(DateUtil.format(new Date(), "yyyy-MM-dd HH:mm:ss") + " " + formatStr, "msgAttitudeQuaternion.txt");
             //log.info(formatStr);
 
-            CurrentStatusEntity msgDroneStatus = new CurrentStatusEntity();
+            
             msgDroneStatus.setDeviceId(droneControl.getDeviceId());
             msgDroneStatus.setUpdateTime(DateTime.Now());
 
@@ -371,7 +373,7 @@ public class MavlinkHandler extends IoHandlerAdapter {
             //writeDataToFile(DateUtil.format(new Date(),"yyyy-MM-dd HH:mm:ss")+" "+globalPositionIntMavlinkMessage.toString(),"msgGlobalPosition.txt");
 
             //组装数据库的操作bean
-            CurrentStatusEntity msgDroneStatus = new CurrentStatusEntity();
+            
             msgDroneStatus.setDeviceId(droneControl.getDeviceId());
             currentAlt = ((float) globalPositionInt.relativeAlt()) / 1000;//将毫米转换成米
             currentLat = parseLat(globalPositionInt.lat());
@@ -383,6 +385,9 @@ public class MavlinkHandler extends IoHandlerAdapter {
             int vy = globalPositionInt.vy() / 100;
             msgDroneStatus.setHorizontalSpeed(Float.parseFloat(Convert.sqrt(vx, vy) + "")); //将cm转换成m
             msgDroneStatus.setVerticalSpeed((float) globalPositionInt.vz() / 100);    //将cm转换成m
+            msgDroneStatus.setSpeed( (float)Math.sqrt(
+                    Math.pow(msgDroneStatus.getHorizontalSpeed(),2) + Math.pow(msgDroneStatus.getVerticalSpeed(),2)
+            ) );
             msgDroneStatus.setUpdateTime(DateTime.Now());
             updateOrInsertCurrentStatus(msgDroneStatus);
         } catch (Exception e) {
@@ -438,7 +443,7 @@ public class MavlinkHandler extends IoHandlerAdapter {
                 //writeDataToFile(DateUtil.format(new Date(),"yyyy-MM-dd HH:mm:ss")+" "+"roll:"+roll+"pitch:"+pitch+"yaw:"+yaw,"vmountAttitude.txt");
 
                 //封装数据库操作bean
-                CurrentStatusEntity msgDroneStatus = new CurrentStatusEntity();
+                
                 msgDroneStatus.setDeviceId(droneControl.getDeviceId());
                 msgDroneStatus.setGimbalRoll(roll);
                 msgDroneStatus.setGimbalPitch(pitch);
@@ -460,7 +465,7 @@ public class MavlinkHandler extends IoHandlerAdapter {
             //log.info("recv SysStatus:" + Convert.bytesToHexString(packet.getRawBytes(), true));
             SysStatus sysStatus = (SysStatus) MavlinkUtil.packetToPayloadObject(packet);
             //封装数据库操作bean
-            CurrentStatusEntity msgDroneStatus = new CurrentStatusEntity();
+            
             msgDroneStatus.setDeviceId(droneControl.getDeviceId());
             msgDroneStatus.setBattery((float) sysStatus.batteryRemaining());
             msgDroneStatus.setUpdateTime(DateTime.Now());
@@ -477,7 +482,7 @@ public class MavlinkHandler extends IoHandlerAdapter {
             //log.info("recv GpsRawInt:" + Convert.bytesToHexString(packet.getRawBytes(), true));
             GpsRawInt gpsRawInt = (GpsRawInt) MavlinkUtil.packetToPayloadObject(packet);
             //封装数据库操作bean
-            CurrentStatusEntity msgDroneStatus = new CurrentStatusEntity();
+            
 //            msgDroneStatus.setDeviceId(droneControl.getDeviceId());
 //            msgDroneStatus.setBattery((float) gpsRawInt.batteryRemaining());
 //            msgDroneStatus.setUpdateTime(DateTime.Now());
@@ -506,17 +511,6 @@ public class MavlinkHandler extends IoHandlerAdapter {
         }
     }
 
-
-    private void resetSeq() {
-        try {
-            synchronized (synObject) {
-                seq = 0;
-            }
-        } catch (Exception e) {
-            // TODO: handle exception
-        }
-    }
-
     private int getSequence() {
         int rt = 0;
         try {
@@ -535,44 +529,22 @@ public class MavlinkHandler extends IoHandlerAdapter {
     }
 
     //更新无人机的实时状态
-    public static void updateOrInsertCurrentStatus(CurrentStatusEntity currentStatusEntity) {
-        try {
-            SqlSession sqlSession = MybatisUtil.getSqlSession();
-            //每一台无人机对应着一条实时记录
-            CurrentStatusDao currentStatusDao = sqlSession.getMapper(CurrentStatusDao.class);
-            List<CurrentStatusEntity> list = currentStatusDao.selectByDeviceId(currentStatusEntity.getDeviceId());
-            if (list.size() > 0) {
-                currentStatusEntity.setId(list.get(0).getId());
-                currentStatusDao.updateById(currentStatusEntity);
-            } else {
-                currentStatusDao.insert(currentStatusEntity);
-            }
-            sqlSession.commit();
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            MybatisUtil.close();
-        }
-    }
+    public void updateOrInsertCurrentStatus(CurrentStatusEntity currentStatusEntity) throws Exception {
+            droneStatus.put("entityName","wrj-00"+currentStatusEntity.getDeviceId());
+            droneStatus.put("lat",currentStatusEntity.getLat());
+            droneStatus.put("lng",currentStatusEntity.getLng());
+            droneStatus.put("alt",currentStatusEntity.getAlt());
+            droneStatus.put("speed",currentStatusEntity.getSpeed());
+            droneStatus.put("yaw",currentStatusEntity.getYaw());
+            droneStatus.put("roll",currentStatusEntity.getRoll());
+            droneStatus.put("pitch",currentStatusEntity.getPitch());
+            droneStatus.put("battery",currentStatusEntity.getBattery());
+            droneStatus.put("oil",-1);
+            droneStatus.put("state",currentStatusEntity.getState());
+            droneStatus.put("payloadState",0);
+            RabbitProducer rabbitProducer = new RabbitProducer();
+            rabbitProducer.messageSend(JSON.toJSONString(droneStatus, SerializerFeature.WRITE_MAP_NULL_FEATURES,SerializerFeature.QuoteFieldNames));
 
-    public String getSpeedParamByDeviceType(int deviceType) {
-        String paramSpeed = "WP_IDLE_VEL";
-        try {
-            switch (deviceType) {
-                case DeviceType.DRONE:
-                    paramSpeed = "WP_IDLE_VEL";
-                    break;
-                case DeviceType.BOAT:
-                    paramSpeed = "CRUISE_SPEED";
-                    break;
-                default:
-                    paramSpeed = "WP_IDLE_VEL";
-                    break;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return paramSpeed;
     }
 
     //执行commandLong指令
@@ -655,7 +627,7 @@ public class MavlinkHandler extends IoHandlerAdapter {
                     //等待超时，查看新的参数值是否正确
                     Thread.sleep(msgTimeout);
                     if (paramList.containsKey(paramSet.paramId())) {
-                        if (paramList.get(paramSet.paramId()).floatValue() == paramSet.paramValue()) {
+                        if (paramList.get(paramSet.paramId()) == paramSet.paramValue()) {
                             rt = true;
                             break;
                         }
@@ -704,13 +676,20 @@ public class MavlinkHandler extends IoHandlerAdapter {
 
         try {
             //尝试清理航线
-            int targetSystemId = CommandHandler.getSysIdByDeviceId(content.getDeviceId(), content.getSysId());
+            int targetSystemId;
+            int deviceType;
+            if(content.getEntityName().equals("无人机1")){
+                targetSystemId = 1;
+                deviceType = 0;
+            }else{
+                targetSystemId = 2;
+                deviceType = 1;
+            }
             int targetComponentId = MAV_COMPONENT.MAV_COMP_ID_ALL;
             clearMission(session, targetSystemId, targetComponentId);
             synchronized (synMissionObject) {
                 //初始化requestSeq和missionResult值
                 requestSeq = 0;
-
                 missionResult = MavMissionResult.MAV_MISSION_INVALID;
                 missionRequestType = MissionRequestType.MISSION_REQUEST_INT; //新版本协议均采用mission_request_int消息代替mission_request消息
                 int msgSeq = getSequence();
@@ -723,7 +702,7 @@ public class MavlinkHandler extends IoHandlerAdapter {
 
                 //设置任务速度
                 boolean isSetParam = false;
-                switch (content.getDeviceType()) {
+                switch (deviceType) {
                     case DeviceType.DRONE:
                         //若是无人机，发送设置速度参数WP_IDLE_VEL
                         isSetParam = setParam(session, ParamSet.builder()
@@ -734,7 +713,7 @@ public class MavlinkHandler extends IoHandlerAdapter {
                                 .targetComponent(targetComponentId)
                                 .build());
                         break;
-                    case DeviceType.BOAT:
+                    case DeviceType.CAR:
                         //若是无人船，需要同时设置CRUISE_SPEED和WP_SPEED
                         boolean isSetOk = false;
                         isSetOk = setParam(session, ParamSet.builder()
@@ -1207,523 +1186,4 @@ public class MavlinkHandler extends IoHandlerAdapter {
         return rt;
     }
 
-    //云台控制相关
-    //拍照
-    public boolean shootPhoto(IoSession session, int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            CommandLong commandLong = CommandLong.builder()
-                    .targetSystem(targetSystemId)
-                    .targetComponent(targetComponentId)
-                    .command(MavCmd.MAV_CMD_DO_DIGICAM_CONTROL)
-                    .confirmation(0)
-                    .param1(0)
-                    .param2(0)
-                    .param3(0)
-                    .param4(0)
-                    .param5(1)
-                    .param6(0)
-                    .param7(0)
-                    .build();
-            rt = exeCmdLong(session, commandLong);
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //回中
-    public boolean cameraCenter(IoSession session, int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            CommandLong commandLong = CommandLong.builder()
-                    .targetSystem(targetSystemId)
-                    .targetComponent(targetComponentId)
-                    .command(MavCmd.MAV_CMD_DO_DIGICAM_CONTROL)
-                    .confirmation(0)
-                    .param1(0)
-                    .param2(0)
-                    .param3(0)
-                    .param4(0)
-                    .param5(5)
-                    .param6(0)
-                    .param7(0)
-                    .build();
-            rt = exeCmdLong(session, commandLong);
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //切换相机模式
-    public boolean changeCameraMode(IoSession session, int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            CommandLong commandLong = CommandLong.builder()
-                    .targetSystem(targetSystemId)
-                    .targetComponent(targetComponentId)
-                    .command(MavCmd.MAV_CMD_DO_DIGICAM_CONTROL)
-                    .confirmation(0)
-                    .param1(0)
-                    .param2(0)
-                    .param3(0)
-                    .param4(0)
-                    .param5(6)
-                    .param6(0)
-                    .param7(0)
-                    .build();
-            rt = exeCmdLong(session, commandLong);
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //开始或停止录像
-    public boolean triggerVideo(IoSession session, int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            CommandLong commandLong = CommandLong.builder()
-                    .targetSystem(targetSystemId)
-                    .targetComponent(targetComponentId)
-                    .command(MavCmd.MAV_CMD_DO_DIGICAM_CONTROL)
-                    .confirmation(0)
-                    .param1(0)
-                    .param2(0)
-                    .param3(0)
-                    .param4(0)
-                    .param5(18)
-                    .param6(0)
-                    .param7(0)
-                    .build();
-            rt = exeCmdLong(session, commandLong);
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //夜视模式
-    public boolean ircNight(IoSession session, int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            CommandLong commandLong = CommandLong.builder()
-                    .targetSystem(targetSystemId)
-                    .targetComponent(targetComponentId)
-                    .command(MavCmd.MAV_CMD_DO_DIGICAM_CONTROL)
-                    .confirmation(0)
-                    .param1(0)
-                    .param2(0)
-                    .param3(0)
-                    .param4(0)
-                    .param5(2)
-                    .param6(0)
-                    .param7(0)
-                    .build();
-            rt = exeCmdLong(session, commandLong);
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //白天模式
-    public boolean ircDay(IoSession session, int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            CommandLong commandLong = CommandLong.builder()
-                    .targetSystem(targetSystemId)
-                    .targetComponent(targetComponentId)
-                    .command(MavCmd.MAV_CMD_DO_DIGICAM_CONTROL)
-                    .confirmation(0)
-                    .param1(0)
-                    .param2(0)
-                    .param3(0)
-                    .param4(0)
-                    .param5(3)
-                    .param6(0)
-                    .param7(0)
-                    .build();
-            rt = exeCmdLong(session, commandLong);
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //自动切换黑夜模式
-    public boolean ircAuto(IoSession session, int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            CommandLong commandLong = CommandLong.builder()
-                    .targetSystem(targetSystemId)
-                    .targetComponent(targetComponentId)
-                    .command(MavCmd.MAV_CMD_DO_DIGICAM_CONTROL)
-                    .confirmation(0)
-                    .param1(0)
-                    .param2(0)
-                    .param3(0)
-                    .param4(0)
-                    .param5(4)
-                    .param6(0)
-                    .param7(0)
-                    .build();
-            rt = exeCmdLong(session, commandLong);
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //放大
-    public boolean zoomPlus(IoSession session, int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            CommandLong commandLong = CommandLong.builder()
-                    .targetSystem(targetSystemId)
-                    .targetComponent(targetComponentId)
-                    .command(MavCmd.MAV_CMD_DO_DIGICAM_CONTROL)
-                    .confirmation(0)
-                    .param1(0)
-                    .param2(0)
-                    .param3(0)
-                    .param4(1)
-                    .param5(7)
-                    .param6(0)
-                    .param7(0)
-                    .build();
-            rt = exeCmdLong(session, commandLong);
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //缩小
-    public boolean zoomMinus(IoSession session, int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            CommandLong commandLong = CommandLong.builder()
-                    .targetSystem(targetSystemId)
-                    .targetComponent(targetComponentId)
-                    .command(MavCmd.MAV_CMD_DO_DIGICAM_CONTROL)
-                    .confirmation(0)
-                    .param1(0)
-                    .param2(0)
-                    .param3(0)
-                    .param4(-1)
-                    .param5(7)
-                    .param6(0)
-                    .param7(0)
-                    .build();
-            rt = exeCmdLong(session, commandLong);
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //增加焦距
-    public boolean focusPlus(IoSession session, int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            CommandLong commandLong = CommandLong.builder()
-                    .targetSystem(targetSystemId)
-                    .targetComponent(targetComponentId)
-                    .command(MavCmd.MAV_CMD_DO_DIGICAM_CONTROL)
-                    .confirmation(0)
-                    .param1(0)
-                    .param2(0)
-                    .param3(0)
-                    .param4(1)
-                    .param5(8)
-                    .param6(0)
-                    .param7(0)
-                    .build();
-            rt = exeCmdLong(session, commandLong);
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //减小焦距
-    public boolean focusMinus(IoSession session, int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            CommandLong commandLong = CommandLong.builder()
-                    .targetSystem(targetSystemId)
-                    .targetComponent(targetComponentId)
-                    .command(MavCmd.MAV_CMD_DO_DIGICAM_CONTROL)
-                    .confirmation(0)
-                    .param1(0)
-                    .param2(0)
-                    .param3(0)
-                    .param4(-1)
-                    .param5(8)
-                    .param6(0)
-                    .param7(0)
-                    .build();
-            rt = exeCmdLong(session, commandLong);
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //自动对焦
-    public boolean focusAuto(IoSession session, int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            CommandLong commandLong = CommandLong.builder()
-                    .targetSystem(targetSystemId)
-                    .targetComponent(targetComponentId)
-                    .command(MavCmd.MAV_CMD_DO_DIGICAM_CONTROL)
-                    .confirmation(0)
-                    .param1(0)
-                    .param2(0)
-                    .param3(0)
-                    .param4(0)
-                    .param5(14)
-                    .param6(0)
-                    .param7(0)
-                    .build();
-            rt = exeCmdLong(session, commandLong);
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //朝向模式锁头
-    public boolean cameraLockUp(IoSession session, int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            CommandLong commandLong = CommandLong.builder()
-                    .targetSystem(targetSystemId)
-                    .targetComponent(targetComponentId)
-                    .command(MavCmd.MAV_CMD_DO_DIGICAM_CONTROL)
-                    .confirmation(0)
-                    .param1(0)
-                    .param2(0)
-                    .param3(0)
-                    .param4(0)
-                    .param5(15)
-                    .param6(0)
-                    .param7(0)
-                    .build();
-            rt = exeCmdLong(session, commandLong);
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //朝向模式跟随
-    public boolean cameraFollow(IoSession session, int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            CommandLong commandLong = CommandLong.builder()
-                    .targetSystem(targetSystemId)
-                    .targetComponent(targetComponentId)
-                    .command(MavCmd.MAV_CMD_DO_DIGICAM_CONTROL)
-                    .confirmation(0)
-                    .param1(0)
-                    .param2(0)
-                    .param3(0)
-                    .param4(0)
-                    .param5(16)
-                    .param6(0)
-                    .param7(0)
-                    .build();
-            rt = exeCmdLong(session, commandLong);
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //跟踪
-    public boolean cameraTrack(IoSession session, int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            CommandLong commandLong = CommandLong.builder()
-                    .targetSystem(targetSystemId)
-                    .targetComponent(targetComponentId)
-                    .command(MavCmd.MAV_CMD_DO_DIGICAM_CONTROL)
-                    .confirmation(0)
-                    .param1(0)
-                    .param2(0)
-                    .param3(0)
-                    .param4(0)
-                    .param5(13)
-                    .param6(0)
-                    .param7(0)
-                    .build();
-            rt = exeCmdLong(session, commandLong);
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //转动云台
-    public boolean moveGimbal(IoSession session, int targetSystemId, int targetComponentId, float pitch, float yaw) {
-        boolean rt = false;
-        try {
-            CommandLong commandLong = CommandLong.builder()
-                    .targetSystem(targetSystemId)
-                    .targetComponent(targetComponentId)
-                    .command(MavCmd.MAV_CMD_DO_MOUNT_CONTROL)
-                    .confirmation(0)
-                    .param1(pitch)
-                    .param2(0)
-                    .param3(yaw)
-                    .param4(0)
-                    .param5(1)
-                    .param6(0)
-                    .param7(0)
-                    .build();
-            rt = exeCmdLong(session, commandLong);
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-
-    /**
-     * 设置通道开关量状态
-     *
-     * @param session
-     * @param targetSystemId
-     * @param targetComponentId
-     * @param state             通道状态，1为开，0为关
-     * @param channelId         通道ID，取值0，1，2三个通道
-     * @return
-     */
-    public boolean setChannelState(IoSession session, int targetSystemId, int targetComponentId, float state, float channelId) {
-        boolean rt = false;
-        try {
-            CommandLong commandLong = CommandLong.builder()
-                    .targetSystem(targetSystemId)
-                    .targetComponent(targetComponentId)
-                    .command(EnumValue.create(6030))
-                    .confirmation(0)
-                    .param1(state)
-                    .param2(channelId)
-                    .param3(0)
-                    .param4(0)
-                    .param5(0)
-                    .param6(0)
-                    .param7(0)
-                    .build();
-            rt = exeCmdLong(session, commandLong);
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //实时手动控制
-
-    /**
-     * @param session
-     * @param targetSystemId
-     * @param x              x轴方向，范围[-1000,1000]
-     * @param y              y轴方向，范围[-1000,1000]
-     * @param z              z轴方向，范围[-1000,1000]
-     * @param r              r轴方向，范围[-1000,1000]
-     * @return
-     */
-    public boolean manualControl(IoSession session, int deviceType, int targetSystemId, int targetComponentId, int x, int y, int z, int r) {
-        boolean rt = false;
-        try {
-            int confirmation = 0;
-            int msgSeq = getSequence();
-            int systemId = Config.gcsSystemId;
-            int componentId = MAV_COMPONENT.MAV_COMP_ID_MISSIONPLANNER;
-            IoBuffer buffer = IoBuffer.allocate(300);
-            byte[] sendData = null;
-            switch (deviceType) {
-                case DeviceType.DRONE:
-                    //通过linkhub控制
-                    //以10hz的频率发送
-                    CommandLong commandLong = CommandLong.builder()
-                            .targetSystem(targetSystemId)
-                            .targetComponent(targetComponentId)
-                            .command(EnumValue.create(6010))
-                            .confirmation(0)
-                            .param1(145) //mode
-                            .param2(x)  //north 单位：米
-                            .param3(y)  //east 单位：米
-                            .param4(z)  //altitude 单位：米
-                            .param5(r)  //yaw 单位：度
-                            .param6(0)
-                            .param7(0)
-                            .build();
-                    for (int i = 0; i < 10; i++) {
-                        //以10hz的频率发送，1s种发送10次，0.1s一次
-                        try {
-                            buffer.clear();
-                            sendData = MavlinkUtil.payloadObjectToRawBytes(commandLong, msgSeq, systemId, componentId, mavlink_version);
-                            buffer.put(sendData);
-                            buffer.flip();
-                            session.write(buffer);
-                            log.info("Send:" + Convert.bytesToHexString(sendData, true));
-                            Thread.sleep(100);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    rt = true;
-                    break;
-                case DeviceType.BOAT:
-                    //通过原始mavlink控制
-                    ManualControl manualControl = ManualControl.builder()
-                            .target(targetSystemId)
-                            .x(x)
-                            .y(y)
-                            .z(z)
-                            .r(r)
-                            .build();
-                    buffer.clear();
-                    sendData = MavlinkUtil.payloadObjectToRawBytes(manualControl, msgSeq, systemId, componentId, mavlink_version);
-                    buffer.put(sendData);
-                    buffer.flip();
-                    synchronized (synObject) {
-                        session.write(buffer);
-                        log.info("Send:" + Convert.bytesToHexString(sendData, true));
-                    }
-                    rt = true;
-                    break;
-                default:
-                    break;
-            }
-
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
 }

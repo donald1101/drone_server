@@ -52,6 +52,10 @@ public class CurrentStatusEntity implements Serializable {
      */
     private Float verticalSpeed;
     /**
+     * 垂直速度
+     */
+    private Float speed;
+    /**
      * 偏航角
      */
     private Float yaw;
@@ -83,10 +87,6 @@ public class CurrentStatusEntity implements Serializable {
      * 时间戳
      */
     private Date updateTime;
-    /**
-     *
-     */
-    private Float hdg;
     /**
      * 0：未知 1：启动中 2：校准中 3：已准备完毕 4：飞行中 5：异常 6：紧急状态 7：关机中 8：结束飞行中
      */

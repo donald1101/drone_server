@@ -4,6 +4,8 @@ import java.util.List;
 
 public class MissionParam {
     private int taskId;
+
+    private int pointCount;
     private List<DeviceInfo> device;
 
     public int getTaskId() {
@@ -20,5 +22,13 @@ public class MissionParam {
 
     public void setDevice(List<DeviceInfo> device) {
         this.device = device;
+    }
+
+    public int getPointCount() {
+        return pointCount;
+    }
+
+    public void setPointCount(int pointCount) {
+        this.pointCount = pointCount;
     }
 }

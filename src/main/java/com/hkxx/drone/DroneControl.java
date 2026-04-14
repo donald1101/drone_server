@@ -19,8 +19,6 @@ public class DroneControl {
     private String devIP = "";    //数传IP地址
     private int devPort = 0;      //数传端口号
     private int targetID = 1;     //mavlink协议中的sys_id，用于唯一标识网络中的设备
-    private String linkhubIP = "127.0.0.1";       //linkhub服务的IP地址
-    private int linkhubPort = 58000;              //linkhub服务开放无人机控制的端口号
     private int deviceId = 0; //该无人机在系统中的设备ID
 
     private Date lastSessionTime = DateTime.Now();
@@ -33,9 +31,6 @@ public class DroneControl {
     private int tsWait = 6000; //信号量等待时间，单位毫秒
     private int deviceState = 0; //无人机当前运行状态，3为standby已准备完毕，4为active飞行中
     private int deviceType = DeviceType.DRONE; //设备类型，默认为无人机
-    private int controlType = ControlType.CONTROL_CLUSTER; //控制类型
-
-    private DeviceStateChanged deviceStateChangedListener = null;
 
     public DroneControl() {
 //        try {
@@ -67,22 +62,6 @@ public class DroneControl {
 
     public void setTargetID(int targetID) {
         this.targetID = targetID;
-    }
-
-    public String getLinkhubIP() {
-        return linkhubIP;
-    }
-
-    public void setLinkhubIP(String linkhubIP) {
-        this.linkhubIP = linkhubIP;
-    }
-
-    public int getLinkhubPort() {
-        return linkhubPort;
-    }
-
-    public void setLinkhubPort(int linkhubPort) {
-        this.linkhubPort = linkhubPort;
     }
 
     public Date getLastSessionTime() {
@@ -125,22 +104,6 @@ public class DroneControl {
         this.deviceType = deviceType;
     }
 
-    public int getControlType() {
-        return controlType;
-    }
-
-    public void setControlType(int controlType) {
-        this.controlType = controlType;
-    }
-
-    public DeviceStateChanged getDeviceStateChangedListener() {
-        return deviceStateChangedListener;
-    }
-
-    public void setDeviceStateChangedListener(DeviceStateChanged deviceStateChangedListener) {
-        this.deviceStateChangedListener = deviceStateChangedListener;
-    }
-
     public boolean isEqual(DroneControl droneControl) {
         boolean rt = true;
         try {
@@ -152,19 +115,7 @@ public class DroneControl {
                 rt = false;
                 return rt;
             }
-            if (!this.linkhubIP.equals(droneControl.getLinkhubIP())) {
-                rt = false;
-                return rt;
-            }
-            if (linkhubPort != droneControl.getLinkhubPort()) {
-                rt = false;
-                return rt;
-            }
             if (deviceType != droneControl.getDeviceType()) {
-                rt = false;
-                return rt;
-            }
-            if (controlType != droneControl.getControlType()) {
                 rt = false;
                 return rt;
             }
@@ -181,18 +132,8 @@ public class DroneControl {
                 client = new TcpClient();
                 String serverIP = "";
                 int serverPort = 0;
-                switch (controlType) {
-                    case ControlType.CONTROL_CLUSTER:
-                        serverIP = linkhubIP;
-                        serverPort = linkhubPort;
-                        break;
-                    case ControlType.CONTROL_DIRECT:
-                        serverIP = devIP;
-                        serverPort = devPort;
-                        break;
-                    default:
-                        break;
-                }
+                serverIP = devIP;
+                serverPort = devPort;
                 client.setServerIP(serverIP);
                 client.setIdleTime(Config.idleTime);
                 client.setConnectTimeout(Config.connectTimeout);
@@ -219,6 +160,7 @@ public class DroneControl {
                             while (!isStopCheck) {
                                 try {
                                     tsSpan = DateTime.Now().getTime() - lastSessionTime.getTime();
+//                                    log.info("TimeSpan:"+tsSpan+"timeout:"+tsTimeout);
                                     if (tsSpan > tsTimeout) {
                                         //会话超时，需要重新连接
                                         log.info("Device connection is timeout.Trying to reconnect...");
@@ -353,376 +295,5 @@ public class DroneControl {
         return rt;
     }
 
-    //发送阵形
-    public boolean sendCollaboration(int targetSystemId, int targetComponentId, int collaboration) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.sendCollaboration(client.getSession(), targetSystemId, targetComponentId, collaboration);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
 
-    //发送阵形编排值
-    public boolean setCollaborationValue(int targetSystemId, int targetComponentId, int collaborationValue) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.setCollaborationValue(client.getSession(), targetSystemId, targetComponentId, collaborationValue);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //发送hold指令
-    public boolean setHold(int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.setHold(client.getSession(), targetSystemId, targetComponentId);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //指点飞行
-    public boolean gotoPosition(int targetSystemId, int targetComponentId, double lat, double lng, float alt) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.gotoPosition(client.getSession(), targetSystemId, targetComponentId, lat, lng, alt);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //发送起飞指令，起飞到指定高度
-    public boolean takeoff(int targetSystemId, int targetComponentId, double lat, double lng, float alt) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.takeoff(client.getSession(), targetSystemId, targetComponentId, lat, lng, alt);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //发送起飞指令，起飞到指定高度，按照当前经纬度
-    public boolean takeoff(int targetSystemId, int targetComponentId, float alt) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.takeoff(client.getSession(), targetSystemId, targetComponentId, alt);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //拍照
-    public boolean shootPhoto(int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.shootPhoto(client.getSession(), targetSystemId, targetComponentId);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //回中
-    public boolean cameraCenter(int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.cameraCenter(client.getSession(), targetSystemId, targetComponentId);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //切换相机模式
-    public boolean changeCameraMode(int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.changeCameraMode(client.getSession(), targetSystemId, targetComponentId);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //开始或停止录像
-    public boolean triggerVideo(int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.triggerVideo(client.getSession(), targetSystemId, targetComponentId);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //夜视模式
-    public boolean ircNight(int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.ircNight(client.getSession(), targetSystemId, targetComponentId);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //白天模式
-    public boolean ircDay(int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.ircDay(client.getSession(), targetSystemId, targetComponentId);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //自动切换黑夜模式
-    public boolean ircAuto(int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.ircAuto(client.getSession(), targetSystemId, targetComponentId);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //放大
-    public boolean zoomPlus(int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.zoomPlus(client.getSession(), targetSystemId, targetComponentId);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //缩小
-    public boolean zoomMinus(int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.zoomMinus(client.getSession(), targetSystemId, targetComponentId);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //增加焦距
-    public boolean focusPlus(int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.focusPlus(client.getSession(), targetSystemId, targetComponentId);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //减小焦距
-    public boolean focusMinus(int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.focusMinus(client.getSession(), targetSystemId, targetComponentId);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //自动对焦
-    public boolean focusAuto(int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.focusAuto(client.getSession(), targetSystemId, targetComponentId);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //朝向模式锁头
-    public boolean cameraLockUp(int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.cameraLockUp(client.getSession(), targetSystemId, targetComponentId);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //朝向模式跟随
-    public boolean cameraFollow(int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.cameraFollow(client.getSession(), targetSystemId, targetComponentId);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //跟踪
-    public boolean cameraTrack(int targetSystemId, int targetComponentId) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.cameraTrack(client.getSession(), targetSystemId, targetComponentId);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //转动云台
-    public boolean moveGimbal(int targetSystemId, int targetComponentId, float pitch, float yaw) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.moveGimbal(client.getSession(), targetSystemId, targetComponentId, pitch, yaw);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    //设置通道开关量状态
-    public boolean setChannelState(int targetSystemId, int targetComponentId, float state, float channelId) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.setChannelState(client.getSession(), targetSystemId, targetComponentId, state, channelId);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    public boolean manualControl(int deviceType, int targetSystemId, int targetComponentId, int x, int y, int z, int r) {
-        boolean rt = false;
-        try {
-            if (client != null) {
-                MavlinkHandler handler = (MavlinkHandler) client.getHandler();
-                rt = handler.manualControl(client.getSession(), deviceType, targetSystemId, targetComponentId, x, y, z, r);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            rt = false;
-        }
-        return rt;
-    }
-
-    public void notifyDeviceStateChanged(int state) {
-        try {
-            if (deviceStateChangedListener != null) {
-                deviceStateChangedListener.onDeviceStateChanged(deviceId, state);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public interface DeviceStateChanged {
-        public void onDeviceStateChanged(int deviceId, int state);
-    }
 }
